@@ -1,5 +1,5 @@
-#include <stdio.h>
 #include <kv/init.h>
+#include <stdio.h>
 
 int main(const int argc, const char **argv) {
     setbuf(stdout, NULL);

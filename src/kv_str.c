@@ -23,18 +23,23 @@ str get_line(FILE *f) {
     line_cap = _DEFAULT_LINE_SIZE;
     int c = fgetc(f);
     while (c != '\n' && c != EOF) {
-        line[char_count] = (uint8_t)c;
-        char_count++;
-        if ((char_count + 1) > line_cap) {
-            uint8_t *temp = malloc(line_cap + _DEFAULT_LINE_SIZE);
-            if (!temp)
-                goto free_err;
-            for (size_t i = 0; i < char_count; i++)
-                temp[i] = line[i];
+        if (c == '\b') {
+            if (char_count > 0)
+                char_count--;
+        } else {
+            line[char_count] = (uint8_t)c;
+            char_count++;
+            if ((char_count + 1) > line_cap) {
+                uint8_t *temp = malloc(line_cap + _DEFAULT_LINE_SIZE);
+                if (!temp)
+                    goto free_err;
+                for (size_t i = 0; i < char_count; i++)
+                    temp[i] = line[i];
 
-            line_cap += _DEFAULT_LINE_SIZE;
-            free(line);
-            line = temp;
+                line_cap += _DEFAULT_LINE_SIZE;
+                free(line);
+                line = temp;
+            }
         }
         c = fgetc(f);
     }

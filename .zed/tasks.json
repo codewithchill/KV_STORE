@@ -13,4 +13,15 @@
         },
         "command": "clear; if ($?) {make clean}; if ($?) {make OPT=-O2 -j8}; if ($?) {./out/main.exe}; if ($?) {make clean}"
     },
+    {
+        "label": "Clean",
+        "reveal_target": "dock",
+        "show_summary": true,
+        "use_new_terminal": false,
+        "cwd": "$ZED_WORKTREE_ROOT",
+        "shell": {
+            "program": "powershell"
+        },
+        "command": "make clean"
+    },
 ]

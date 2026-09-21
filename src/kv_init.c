@@ -32,7 +32,7 @@ typedef struct {
     kv_pair data;
 } kv_cmd_t;
 
-str** kv_parse_get_tokens(str* line) {
+str **kv_parse_get_tokens(str *line) {
     if (!line || !line->data || line->len <= 0 || line->capacity <= 0)
         return NULL;
     return NULL;
@@ -44,8 +44,9 @@ kv_cmd_t kv_parse_cmd(str *line) {
     if (!line || !line->data || line->len <= 0 || line->capacity <= 0)
         return _cmd;
 
-    str** tokens = kv_parse_get_tokens(line);
-    if (!tokens) return _cmd;
+    str **tokens = kv_parse_get_tokens(line);
+    if (!tokens)
+        return _cmd;
 
     /*
      if (!strncmp(__cmds[KV_CMD_EXIT], (const char *)line.data,
@@ -75,15 +76,17 @@ int kv_start(kv_args Args) {
     while (true) {
         printf("__$ ");
         str line = get_line(stdin);
-        // print_line_detail(&line);
-        // kv_cmd_t command = kv_parse_cmd(&line);
-        if (!strncmp(__cmds[KV_CMD_EXIT], (const char *)line.data,
-                     strlen(__cmds[KV_CMD_EXIT]))) {
+        if (line.data) {
+            print_line_detail(&line);
+            // kv_cmd_t command = kv_parse_cmd(&line);
+            if (!strncmp(__cmds[KV_CMD_EXIT], (const char *)line.data,
+                         strlen(__cmds[KV_CMD_EXIT]))) {
+                free(line.data);
+                status = EXIT_SUCCESS;
+                break;
+            }
             free(line.data);
-            status = EXIT_SUCCESS;
-            break;
         }
-        free(line.data);
     }
 
     return status;
