@@ -1,0 +1,3 @@
+-xc
+-std=c23
+-Iinclude
