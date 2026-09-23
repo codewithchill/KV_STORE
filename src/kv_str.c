@@ -4,7 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define _DEFAULT_LINE_SIZE 512
+#define _1_KB 1024
+#define _DEFAULT_LINE_SIZE (_1_KB / 2)
 
 static void print_loop_single(const char *restrict format, const str *line) {
     assert(format != NULL && line != NULL);

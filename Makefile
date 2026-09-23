@@ -10,7 +10,7 @@ SRC_DIR = src
 OBJ_DIR = $(OUT_DIR)/obj
 
 # Output executable
-TARGET = ./$(OUT_DIR)/main.exe
+TARGET = ./$(OUT_DIR)/main
 
 # Find all .c files in src/ and map them to .o files in obj/
 SRCS = $(wildcard $(SRC_DIR)/*.c)

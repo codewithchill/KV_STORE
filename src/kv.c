@@ -1,6 +1,7 @@
-#include <kv/colors.h>
+#include <kv/kv.h>
+
+#include <kv/ansi.h>
 #include <kv/file.h>
-#include <kv/init.h>
 #include <kv/str.h>
 #include <kv/version.h>
 
@@ -27,6 +28,15 @@ typedef enum {
     KV_CMD_ERR
 } KV_CMD;
 
+typedef struct {
+    str *key, *val;
+} kv_pair;
+
+typedef struct data_node data_node;
+struct data_node {
+    kv_pair data;
+    data_node *next, *prev;
+};
 typedef struct {
     KV_CMD cmd;
     kv_pair data;
@@ -128,12 +138,15 @@ kv_args kv_parse_args(const int argc, const char **restrict argv) {
     }
     return arg;
 }
-int kv_init(const int argc, const char **restrict argv) {
+
+int kv(const int argc, const char **restrict argv) {
     int ext_code = 0;
     kv_args Args = kv_parse_args(argc, argv);
+
     switch (Args.flg) {
     case KV_ERR:
-        kv_print_help(_PROGRAM, _VERSION, C_RED "Invalid Arguments!" C_RESET);
+        kv_print_help(_PROGRAM, _VERSION,
+                      C_FG_BRIGHT_RED BOLD "Invalid Arguments!" RESET);
         ext_code = EXIT_FAILURE;
         break;
     case KV_HELP:
