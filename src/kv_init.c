@@ -33,7 +33,7 @@ typedef struct {
 } kv_cmd_t;
 
 str **kv_parse_get_tokens(str *line) {
-    if (!line || !line->data || line->len <= 0 || line->capacity <= 0)
+    if (!line || !line->data || line->byte_len <= 0 || line->capacity <= 0)
         return NULL;
     return NULL;
 }
@@ -41,7 +41,7 @@ str **kv_parse_get_tokens(str *line) {
 kv_cmd_t kv_parse_cmd(str *line) {
     kv_cmd_t _cmd = {.cmd = KV_CMD_ERR, .data = {.key = NULL, .val = NULL}};
 
-    if (!line || !line->data || line->len <= 0 || line->capacity <= 0)
+    if (!line || !line->data || line->byte_len <= 0 || line->capacity <= 0)
         return _cmd;
 
     str **tokens = kv_parse_get_tokens(line);
@@ -77,7 +77,7 @@ int kv_start(kv_args Args) {
         printf("__$ ");
         str line = get_line(stdin);
         if (line.data) {
-            print_line_detail(&line);
+            print_line_detail(&line, 'm');
             // kv_cmd_t command = kv_parse_cmd(&line);
             if (!strncmp(__cmds[KV_CMD_EXIT], (const char *)line.data,
                          strlen(__cmds[KV_CMD_EXIT]))) {

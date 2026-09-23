@@ -1,10 +1,60 @@
+#include <assert.h>
 #include <kv/str.h>
+#include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #define _DEFAULT_LINE_SIZE 512
 
-void print_line_detail(str *line) {
-    printf("[%llu]-[%llu]:[%s]\n", line->capacity, line->len, line->data);
+static void print_loop_single(const char *restrict format, const str *line) {
+    assert(format != NULL && line != NULL);
+    size_t byte_len = line->byte_len;
+    size_t i = 0;
+    while ('\0' != line->data[i] && i < byte_len) {
+        printf(format, line->data[i]);
+        i++;
+    }
+    printf("\n");
+}
+static void print_loop_double(const char *restrict format, const str *line) {
+    assert(format != NULL && line != NULL);
+    size_t byte_len = line->byte_len;
+    size_t i = 0;
+    while ('\0' != line->data[i] && i < byte_len) {
+        printf(format, line->data[i], line->data[i]);
+        i++;
+    }
+    printf("\n");
+}
+static void print_raw_string(str *restrict line, const char mode) {
+    if (!line)
+        return;
+    if (line->capacity < 1 || !line->data)
+        return;
+
+    switch (mode) {
+    case 'c':
+        print_loop_single("[%c] ", line);
+        break;
+    case 'm':
+        print_loop_double("[%c-%u] ", line);
+        break;
+    case 'n':
+        print_loop_single("[%u] ", line);
+        break;
+    }
+    return;
+}
+
+void print_line_detail(str *line, const char mode) {
+    printf("------------------------------\n");
+    printf("Line Capacity:     [%lu]\n"
+           "Line UTF8 Length:  [%lu]\n"
+           "Line Bytes Length: [%lu]\n"
+           "Line:              ",
+           line->capacity, line->byte_len, line->utf_len);
+    print_raw_string(line, mode);
+    printf("------------------------------\n");
 }
 
 /* the caller must free the str.data
@@ -14,6 +64,7 @@ void print_line_detail(str *line) {
  *      a. str.capacity != 0
  */
 str get_line(FILE *f) {
+
     size_t line_cap = 0;
     size_t char_count = 0;
     uint8_t *line = malloc(_DEFAULT_LINE_SIZE);
@@ -26,6 +77,9 @@ str get_line(FILE *f) {
         if (c == '\b') {
             if (char_count > 0)
                 char_count--;
+        } else if (c != '\n' && c > 1 && c < 32) {
+            c = fgetc(f);
+            continue;
         } else {
             line[char_count] = (uint8_t)c;
             char_count++;
@@ -53,7 +107,10 @@ free_err:
     line_cap = 0;
     char_count = 0;
 __end:
-    str str_line = {.capacity = line_cap, .data = line, .len = char_count};
+    str str_line = {.capacity = line_cap,
+                    .data = line,
+                    .byte_len = char_count,
+                    .utf_len = str_len(line)};
     return str_line;
 }
 
@@ -61,7 +118,7 @@ str *get_empty_str() {
     str *_str = calloc(1, sizeof(str));
     if (!_str)
         return NULL;
-    return NULL;
+    return _str;
 }
 
 str *str_conv(const char *restrict /*src*/) {
@@ -70,7 +127,8 @@ str *str_conv(const char *restrict /*src*/) {
 }
 void free_str(str *str_data) {
     free(str_data->data);
-    str_data->len = 0;
+    str_data->byte_len = 0;
+    str_data->utf_len = 0;
     str_data->data = NULL;
     str_data->capacity = 0;
 }

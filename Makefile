@@ -1,8 +1,8 @@
 # Compiler settings
-CC = clang
-OPT = -O2
-SANITIZE_ADDR = -fsanitize=address
-CFLAGS = -Wall -Wextra -g -std=c23 $(OPT) -I./include -D_CRT_SECURE_NO_WARNINGS $(SANITIZE_ADDR)
+CC ?= gcc
+OPT ?= -O2
+SANITIZE_ADDR ?= -fsanitize=address
+CFLAGS = -Wall -Wextra -g -std=c23 $(OPT) -I./include $(SANITIZE_ADDR)
 
 # Directories
 OUT_DIR = out

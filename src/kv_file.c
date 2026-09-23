@@ -6,7 +6,7 @@
 
 // Incomplete
 data_node *parse_file_line(str line) {
-    if (line.capacity < 1 || line.len < 1 || !line.data)
+    if (line.capacity < 1 || line.byte_len < 1 || !line.data)
         return NULL;
 
     data_node *__node = malloc(sizeof(data_node));

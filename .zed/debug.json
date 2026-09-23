@@ -1,34 +1,24 @@
 [
     {
-      "label": "CLANG - Debug native binary",
-      "build": {
-        "command": "make",
-        "args": ["-j8", "all", "OPT=-O0", "SANITIZE_ADDR=\"\""],
-        "cwd": "$ZED_WORKTREE_ROOT"
-      },
-      "program": "$ZED_WORKTREE_ROOT/out/main.exe",
-      "request": "launch",
-      "adapter": "CodeLLDB"
+        "label": "CLANG - Debug native binary",
+        "build": {
+            "command": "make",
+            "args": ["-j8", "all", "OPT=-O0", "SANITIZE_ADDR=\"\""],
+            "cwd": "$ZED_WORKTREE_ROOT"
+        },
+        "program": "$ZED_WORKTREE_ROOT/out/main.exe",
+        "request": "launch",
+        "adapter": "CodeLLDB"
     },
     {
         "label": "GCC - Debug native binary",
         "build": {
-            "command": "gcc",
-            "args": [
-                "-Wall",
-                "-Wextra",
-                "-g",
-                "-std=c23",
-                "-O2",
-                "-I./include",
-                "src/*.c",
-                "-o",
-                "./main.exe",
-            ],
-            "cwd": "$ZED_WORKTREE_ROOT",
+            "command": "make",
+            "args": ["-j8", "all", "OPT=-O0", "SANITIZE_ADDR="],
+            "cwd": "$ZED_WORKTREE_ROOT"
         },
-        "program": "$ZED_WORKTREE_ROOT/main.exe",
+        "program": "$ZED_WORKTREE_ROOT/out/main.exe",
         "request": "launch",
-        "adapter": "GDB",
-    },
+        "adapter": "GDB"
+    }
 ]
