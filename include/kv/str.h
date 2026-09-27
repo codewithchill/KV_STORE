@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 
@@ -9,7 +10,7 @@ typedef struct {
     size_t utf_len;
     size_t capacity;
 } str;
-
+str *get_str(size_t cap);
 void print_line_detail(str *line, const char mode);
 str get_line(FILE *f);
 str *str_conv(const char *restrict src);

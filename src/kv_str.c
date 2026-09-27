@@ -115,13 +115,16 @@ __end:
     return str_line;
 }
 
-str *get_empty_str() {
+str *get_str(size_t cap) {
     str *_str = calloc(1, sizeof(str));
     if (!_str)
         return NULL;
+    _str->data = malloc(cap);
+    _str->capacity = cap;
+    if (cap != 0 && _str->data == NULL)
+        free(_str);
     return _str;
 }
-
 str *str_conv(const char *restrict /*src*/) {
     // if (!src)
     return NULL;
