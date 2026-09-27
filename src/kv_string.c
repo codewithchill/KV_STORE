@@ -1,5 +1,5 @@
 #include <assert.h>
-#include <kv/str.h>
+#include <kv/string.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,7 +7,7 @@
 #define _1_KB 1024
 #define _DEFAULT_LINE_SIZE (_1_KB / 2)
 
-static void print_loop_single(const char *restrict format, const str *line) {
+static void print_loop_single(const char *restrict format, const string *line) {
     assert(format != NULL && line != NULL);
     size_t byte_len = line->byte_len;
     size_t i = 0;
@@ -17,7 +17,7 @@ static void print_loop_single(const char *restrict format, const str *line) {
     }
     printf("\n");
 }
-static void print_loop_double(const char *restrict format, const str *line) {
+static void print_loop_double(const char *restrict format, const string *line) {
     assert(format != NULL && line != NULL);
     size_t byte_len = line->byte_len;
     size_t i = 0;
@@ -27,7 +27,7 @@ static void print_loop_double(const char *restrict format, const str *line) {
     }
     printf("\n");
 }
-static void print_raw_string(str *restrict line, const char mode) {
+static void print_raw_string(string *restrict line, const char mode) {
     if (!line)
         return;
     if (line->capacity < 1 || !line->data)
@@ -47,7 +47,7 @@ static void print_raw_string(str *restrict line, const char mode) {
     return;
 }
 
-void print_line_detail(str *line, const char mode) {
+void print_line_detail(string *line, const char mode) {
     printf("------------------------------\n");
     printf("Line Capacity:     [%lu]\n"
            "Line UTF8 Length:  [%lu]\n"
@@ -58,13 +58,13 @@ void print_line_detail(str *line, const char mode) {
     printf("------------------------------\n");
 }
 
-/* the caller must free the str.data
+/* the caller must free the string.data
  *
- * 1. If str.data != NULL
+ * 1. If string.data != NULL
 
- *      a. str.capacity != 0
+ *      a. string.capacity != 0
  */
-str get_line(FILE *f) {
+string get_line(FILE *f) {
 
     size_t line_cap = 0;
     size_t char_count = 0;
@@ -108,15 +108,17 @@ free_err:
     line_cap = 0;
     char_count = 0;
 __end:
-    str str_line = {.capacity = line_cap,
-                    .data = line,
-                    .byte_len = char_count,
-                    .utf_len = str_len(line)};
+    string *str_line = {.capacity = line_cap,
+                        .data = line,
+                        .byte_len = char_count,
+                        .utf_len = str_len(line)};
     return str_line;
 }
-
-str *get_str(size_t cap) {
-    str *_str = calloc(1, sizeof(str));
+/*
+ * cap = Capacity of the string
+ */
+string *get_str(size_t cap) {
+    string *_str = calloc(1, sizeof(string));
     if (!_str)
         return NULL;
     _str->data = malloc(cap);
@@ -125,12 +127,12 @@ str *get_str(size_t cap) {
         free(_str);
     return _str;
 }
-str *str_conv(const char *restrict /*src*/) {
+string *str_conv(const char *restrict /*src*/) {
     // if (!src)
     return NULL;
 }
-void free_str(str *str_data) {
-    free(str_data->data);
+void free_str(string *str_data) {
+    free(str_data->s.data);
     str_data->byte_len = 0;
     str_data->utf_len = 0;
     str_data->data = NULL;

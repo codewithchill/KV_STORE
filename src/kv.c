@@ -2,7 +2,7 @@
 #include <kv/error.h>
 #include <kv/file.h>
 #include <kv/kv.h>
-#include <kv/str.h>
+#include <kv/string.h>
 #include <kv/version.h>
 
 #include <stdbool.h>
@@ -13,18 +13,20 @@
 
 typedef struct kv_args {
     enum { KV_ERR = 0, KV_HELP = 1, KV_FILE_PATH = 2 } flg;
+    kv_error_t err;
     union {
-        error_t err;
+        kv_error_t err;
         const char *filepath;
     } val;
 } kv_args;
 
 typedef struct {
-    str *key, *val;
+    string *key, *val;
 } kv_pair;
 
 typedef struct data_node data_node;
 struct data_node {
+    kv_error_t err;
     kv_pair data;
     data_node *next, *prev;
 };
@@ -41,67 +43,68 @@ typedef struct {
         KV_CMD_ERR
     } cmd;
     union {
-        error_t err;
+        kv_error_t err;
         kv_pair data;
     } val;
 } kv_cmd_t;
 
 typedef struct {
+    kv_error_t err;
+    string *token;
     enum {
         KV_TOKEN_ERROR,
         KV_TOKEN_CMD,
         KV_TOKEN_STR,
-
     } token_type;
-    str* token;
 } token_t;
 
 typedef struct {
-    error_t err;
+    kv_error_t err;
     size_t token_count;
     token_t **tokens;
 } tokens_t;
-
-tokens_t kv_get_tokens(str *line) {
+/*
+tokens_t kv_get_tokens(string *line) {
     tokens_t tkn = {.err = KV_ERR_NOT_INIT, .token_count = 0, .tokens = NULL};
-    if (!line || !line->data || line->byte_len <= 0 || line->capacity <= 0)
+    if (!line || !line->s.data || line->byte_len <= 0 || line->capacity <= 0)
         return tkn;
-    
+
     return tkn;
 }
 
-kv_cmd_t kv_parse_cmd(str *line) {
+kv_cmd_t kv_parse_cmd(string *line) {
     kv_cmd_t _cmd = {
         .cmd = KV_CMD_ERR, .val.err = KV_ERR_NOT_INIT
-        /*.val = {.data = {.key = NULL, .val = NULL}}*/
-    };
-
-    if (!line || !line->data || line->byte_len <= 0 || line->capacity <= 0)
-        return _cmd;
-
-    tokens_t tokens = kv_get_tokens(line);
-    if (tokens.err)
-        return _cmd;
-
-    // return kv_parse_tokens(tokens);
-    return _cmd;
+        //.val = {.data = {.key = NULL, .val = NULL}}
 }
+;
 
+if (!line || !line->data || line->byte_len <= 0 || line->capacity <= 0)
+    return _cmd;
+
+tokens_t tokens = kv_get_tokens(line);
+if (!KV_IS_OK(tokens.err))
+    return _cmd;
+
+// return kv_parse_tokens(tokens);
+return _cmd;
+}
+*/
 static int repl() {
     int status = 0;
     while (true) {
         printf("__$ ");
-        str line = get_line(stdin);
-        if (line.data) {
+        string line = get_line(stdin);
+        if (KV_IS_OK(line.err) && line.s.data) {
             print_line_detail(&line, 'm');
             // kv_cmd_t command = kv_parse_cmd(&line);
-            if (!strncmp(__cmds[KV_CMD_EXIT], (const char *)line.data,
+            if (!strncmp(__cmds[KV_CMD_EXIT], (const char *)line.s.data,
                          strlen(__cmds[KV_CMD_EXIT]))) {
-                free(line.data);
+                free(line.s.data);
                 status = EXIT_SUCCESS;
                 break;
             }
-            free(line.data);
+            free(line.s.data);
         }
     }
     return status;
@@ -127,19 +130,22 @@ static int kv_start(kv_args Args) {
 static void kv_print_help(const char *restrict PROG_NAME,
                           const char *restrict VERSION,
                           const char *restrict msg) {
-    const char *str = "\t-f <file_path>: Uses the file to load ans save data.\n"
-                      "\t                If no path give saved in the current "
-                      "working directory.\n\n"
-                      "\t-h\n"
-                      "\t--help        : Prints this help menu.\n";
-    printf("[%s] Version: %s\n%s\n%s", PROG_NAME, VERSION, msg, str);
+    const char *string =
+        "\t-f <file_path>: Uses the file to load ans save data.\n"
+        "\t                If no path give saved in the current "
+        "working directory.\n\n"
+        "\t-h\n"
+        "\t--help        : Prints this help menu.\n";
+    printf("[%s] Version: %s\n%s\n%s", PROG_NAME, VERSION, msg, string);
 }
+
 static void kv_print_all_args(const int argc, const char **restrict argv) {
     printf("Argument Count: [%d]\n", argc);
     for (int i = 0; argc >= i && argv[i] != NULL; i++)
         printf("[%02d]: [%s]\n", i, argv[i]);
     printf("\n");
 }
+
 static kv_args kv_parse_args(const int argc, const char **restrict argv) {
     // kv_print_all_args(argc, argv);
     kv_args arg = {.flg = KV_ERR, .val.filepath = NULL};

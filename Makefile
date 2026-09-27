@@ -35,5 +35,7 @@ $(OBJ_DIR):
 clean:
 	rm -rf $(OUT_DIR)
 
-# Phony targets to prevent conflicts with files named 'all' or 'clean'
-.PHONY: all clean
+hello:
+	@echo "Hello"
+
+.PHONY: all clean hello

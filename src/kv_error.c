@@ -1,19 +1,19 @@
 #include <kv/error.h>
+#include <kv/string.h>
 
-str get_error_msg(error_t e) {
-    str s = {.data = NULL, .byte_len = 0, .capacity = 0, .utf_len = 0};
+char *get_error_msg(kv_error_t e) {
     switch (e) {
     case KV_ERR_NONE:
-        return s;
+        return "No Error Occured";
     case KV_ERR_MISC:
-        return s;
+        return "Dummy Error";
     case KV_ERR_MEM_ALLOC:
-        return s;
+        return "Dummy Error";
     case KV_ERR_INVAL_ARGS:
-        return s;
+        return "Dummy Error";
     case KV_ERR_NOT_INIT:
-        return s;
+        return "Dummy Error";
     default:
-        return s;
+        return "";
     }
 }

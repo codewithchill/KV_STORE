@@ -4,7 +4,7 @@
  * INFO:
  * Link : https://en.wikipedia.org/wiki/ANSI_escape_code
  *
- * FIX: Still in development
+ * ERROR: Still in development
  */
 
 #define RESET "\033[0m"
@@ -18,7 +18,7 @@
 #define HIDE "\033[8m"
 #define STRIKE "\033[9m"
 
-// INFO Not supported
+// INFO Not supported on most terminal
 // #define FONT_DEF "\033[10m"
 // #define FONT_1 "\033[11m"
 // #define FONT_2 "\033[12m"

@@ -1,11 +1,11 @@
 #include <kv/kv.h>
-#include <kv/str.h>
+#include <kv/string.h>
 #include <stdio.h>
 // #include <stdlib.h>
 #include <string.h>
 
 // Incomplete
-data_node *parse_file_line(data_node *node, str line) {
+data_node *parse_file_line(data_node *node, string line) {
     if (!node)
         return NULL;
     if (line.capacity < 1 || line.byte_len < 1 || !line.data)
@@ -16,8 +16,8 @@ data_node *parse_file_line(data_node *node, str line) {
         return NULL;
     *colon = '\0';
     // ptrdiff_t end = (void *)colon - (void *)line.data;
-    // str *key = str_conv((const char *)line.data);
-    // str *val = str_conv((const char *)(colon + 1));
+    // string *key = str_conv((const char *)line.data);
+    // string *val = str_conv((const char *)(colon + 1));
     return node;
 }
 data_node *load_from_file_if_exists(const char *restrict file_path) {
@@ -39,7 +39,7 @@ data_node *load_from_file_if_exists(const char *restrict file_path) {
     data_node *head = NULL;
     // data_node *tail = NULL;
 
-    str line = get_line(f);
+    string line = get_line(f);
     while (line.data != NULL) {
         if (0 != line.capacity) {
             free_str(&line);
