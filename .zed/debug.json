@@ -14,10 +14,10 @@
         "label": "GCC - Debug native binary",
         "build": {
             "command": "make",
-            "args": ["-j8", "all", "OPT=-O0", "SANITIZE_ADDR="],
+            "args": ["-j8", "all", "OPT=-O0", "SANITIZE_ADDR=", "CC=gcc"],
             "cwd": "$ZED_WORKTREE_ROOT"
         },
-        "program": "$ZED_WORKTREE_ROOT/out/main.exe",
+        "program": "$ZED_WORKTREE_ROOT/out/main",
         "request": "launch",
         "adapter": "GDB"
     }

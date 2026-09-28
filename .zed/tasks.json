@@ -15,7 +15,7 @@
         "shell": {
             "program": "bash"
         },
-        "command": "clear && make clean && make OPT=-O2 -j3 && ./out/main.exe"
+        "command": "clear && make clean && make OPT=-O2 -j3 CC=gcc && ./out/main"
     },
     {
         "label": "Clean",

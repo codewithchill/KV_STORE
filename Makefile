@@ -2,7 +2,8 @@
 CC ?= gcc
 OPT ?= -O2
 SANITIZE_ADDR ?= -fsanitize=address
-CFLAGS = -Wall -Wextra -g -std=c23 $(OPT) -I./include $(SANITIZE_ADDR)
+UNUSED_FLGS ?= -Wall -Wextra -Wpedantic -Wunused -Wunused-function -Wunused-variable -Wunused-parameter -Wunused-label -Wunused-value -Wunused-macros -Wunused-local-typedefs
+CFLAGS = -Wall -Wextra -g -std=c23 $(OPT) -I./include $(SANITIZE_ADDR) $(UNUSED_FLGS)
 
 # Directories
 OUT_DIR = out

@@ -1,17 +1,17 @@
 #include <kv/kv.h>
+#include <kv/macros.h>
 #include <kv/string.h>
 #include <stdio.h>
-// #include <stdlib.h>
 #include <string.h>
 
 // Incomplete
 data_node *parse_file_line(data_node *node, string line) {
     if (!node)
         return NULL;
-    if (line.capacity < 1 || line.byte_len < 1 || !line.data)
+    if (line.s->capacity < 1 || line.s->byte_len < 1 || !line.s->data)
         return NULL;
 
-    char *colon = strchr((char *)line.data, ':');
+    char *colon = strchr((char *)line.s->data, ':');
     if (!colon)
         return NULL;
     *colon = '\0';
@@ -39,9 +39,10 @@ data_node *load_from_file_if_exists(const char *restrict file_path) {
     data_node *head = NULL;
     // data_node *tail = NULL;
 
-    string line = get_line(f);
-    while (line.data != NULL) {
-        if (0 != line.capacity) {
+    string line;
+    get_line(&line, f);
+    while (IS_NOT_EQUAL(line.s->data, NULL)) {
+        if (IS_NOT_EQUAL(0, line.s->capacity)) {
             free_str(&line);
             break;
         }
@@ -50,7 +51,7 @@ data_node *load_from_file_if_exists(const char *restrict file_path) {
         // tail = store_node(node, tail);
 
         free_str(&line);
-        line = get_line(f);
+        get_line(&line, f);
     }
     return head;
 }
