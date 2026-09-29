@@ -6,7 +6,7 @@
 
 #include <kv/error.h>
 
-typedef uint32_t Rune;
+typedef int32_t Rune;
 typedef uint8_t byte;
 typedef byte* bytes;
 

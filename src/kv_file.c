@@ -53,5 +53,6 @@ data_node *load_from_file_if_exists(const char *restrict file_path) {
         free_str(&line);
         get_line(&line, f);
     }
+    fclose(f);
     return head;
 }

@@ -148,7 +148,7 @@ void free_str(string *s) {
 size_t str_len(const string *s) { return s->s.utf_len; }
 string str_init() {
     string s = {
-        .err = KV_ERR_NONE,
+        .err = KV_ERR_NOT_INIT,
         .s = {.byte_len = 0, .capacity = 0, .data = NULL, .utf_len = 0}};
     return s;
 }
