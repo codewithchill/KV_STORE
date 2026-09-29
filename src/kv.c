@@ -28,9 +28,9 @@ typedef struct data_node {
     struct data_node *next, *prev;
 } data_node;
 typedef enum token_type {
-    KV_TOKEN_CMD,
-    KV_TOKEN_STR,
-    KV_TOKEN_ERR,
+    KV_TOK_CMD,
+    KV_TOK_STR,
+    KV_TOK_ERR,
 } token_type;
 typedef struct {
     token_type tok_t;
@@ -46,31 +46,46 @@ typedef struct {
     token_t **tokens;
 } tokens_t;
 
-static const char *__cmds[] = {"SET", "GET", "DEL", "SHOW", "EXIT"};
-constexpr size_t n_cmds = 5;
+static constexpr int32_t DEFAULT_TOK_LIMIT = 3;
+static constexpr char __cmds[][5] = {"SET",  "GET",  "DEL",
+                                     "SHOW", "HELP", "EXIT"};
+static constexpr size_t n_cmds = sizeof(__cmds) / sizeof(__cmds[0]);
+typedef enum {
+    KV_CMD_SET = 0x00,
+    KV_CMD_GET,
+    KV_CMD_DEL,
+    KV_CMD_SHOW,
+    KV_CMD_HELP,
+    KV_CMD_EXIT,
+    // AT THE END
+    KV_CMD_ERR
+} cmd_t;
+static const struct {
+    cmd_t cmd;
+    const char *cmd_str;
+    uint8_t noOfArgs;
+} cmds[] = {
+    {.cmd = KV_CMD_SET, .cmd_str = __cmds[KV_CMD_SET], .noOfArgs = 2},
+    {.cmd = KV_CMD_GET, .cmd_str = __cmds[KV_CMD_GET], .noOfArgs = 1},
+    {.cmd = KV_CMD_DEL, .cmd_str = __cmds[KV_CMD_DEL], .noOfArgs = 1},
+    {.cmd = KV_CMD_SHOW, .cmd_str = __cmds[KV_CMD_SHOW], .noOfArgs = 0},
+    {.cmd = KV_CMD_HELP, .cmd_str = __cmds[KV_CMD_HELP], .noOfArgs = 0},
+    {.cmd = KV_CMD_EXIT, .cmd_str = __cmds[KV_CMD_EXIT], .noOfArgs = 0}};
 typedef struct {
-    enum {
-        KV_CMD_SET = 0x00,
-        KV_CMD_GET = 0x01,
-        KV_CMD_DEL = 0x02,
-        KV_CMD_SHOW = 0x03,
-        KV_CMD_EXIT = 0x04,
-        // AT THE END
-        KV_CMD_ERR
-    } cmd;
+    cmd_t cmd;
     union {
         kv_error_t err;
-        kv_pair *data;
+        kv_pair data;
     } val;
 } kv_cmd_t;
 
 static const char *get_token_type_str(token_type t) {
     switch (t) {
-    case KV_TOKEN_CMD:
+    case KV_TOK_CMD:
         return "CMD";
-    case KV_TOKEN_ERR:
+    case KV_TOK_ERR:
         return "ERR";
-    case KV_TOKEN_STR:
+    case KV_TOK_STR:
         return "STR";
     default:
         return "";
@@ -95,15 +110,16 @@ static bytes get_end(bytes start) {
         start++;
     return start;
 }
-/*static bytes get_next_char(bytes s, byte c) {
+static bytes get_next_char(bytes s, byte c) {
     // TODO: Improve to support rune also
-
+    if (IS_NULL(s))
+        return NULL;
     while (IS_NOT_EQUAL(*s, '\0') && IS_NOT_EQUAL(*s, c))
         s++;
     return s;
-}*/
+}
 static token_type get_tok_type(string *s) {
-    token_type t = KV_TOKEN_ERR;
+    token_type t = KV_TOK_ERR;
     bool is_set = false;
     for (size_t i = 0; i < n_cmds; i++) {
         auto s_len = s->s.byte_len;
@@ -112,15 +128,15 @@ static token_type get_tok_type(string *s) {
             continue;
         if (!strcmp(get_c_string(s), __cmds[i])) {
             is_set = true;
-            t = KV_TOKEN_CMD;
+            t = KV_TOK_CMD;
         }
     }
     if (!is_set)
-        t = KV_TOKEN_STR;
+        t = KV_TOK_STR;
     return t;
 }
 static token_t get_next_token(bytes *data) {
-    token_t t = {.tok_t = KV_TOKEN_ERR, .v.err = KV_ERR_NOT_INIT};
+    token_t t = {.tok_t = KV_TOK_ERR, .v.err = KV_ERR_NOT_INIT};
     enum {
         KV_PARSE_NORMAL,
         KV_PARSE_SINGLE_QUOTE,
@@ -139,16 +155,19 @@ static token_t get_next_token(bytes *data) {
                 end = get_end(*data);
                 ptrdiff_t c_count = end - start;
                 string s;
-                kv_error_t e = create_string(&s, *data, c_count);
+                kv_error_t e = create_string(&s, start, c_count);
                 if (KV_IS_ERROR(e)) {
                     kv_print_err(e);
                     free_str(&s);
-                    t.tok_t = KV_TOKEN_ERR;
+                    if (IS_EQUAL(t.v.err, KV_ERR_INVAL_ARGS))
+                        t.v.err = KV_ERR_INPUT;
+                    else
+                        t.v.err = e;
                     t.v.err = e;
                     return t;
                 }
                 t.tok_t = get_tok_type(&s);
-                if (IS_EQUAL(t.tok_t, KV_TOKEN_ERR)) {
+                if (IS_EQUAL(t.tok_t, KV_TOK_ERR)) {
                     free_str(&s);
                     t.v.err = KV_ERR_TOK_INVAL;
                 }
@@ -158,7 +177,75 @@ static token_t get_next_token(bytes *data) {
             }
             break;
         case KV_PARSE_DOUBLE_QUOTE:
+            if (IS_EQUAL(**data, '\''))
+                state = KV_PARSE_SINGLE_QUOTE;
+            else if (IS_NOT_EQUAL(**data, '"'))
+                state = KV_PARSE_NORMAL;
+            else {
+                end = get_next_char(*data + 1, '"');
+                if (IS_EQUAL(*end, '\0')) {
+                    t.tok_t = KV_TOK_ERR;
+                    t.v.err = KV_ERR_TOK_INVAL;
+                    return t;
+                }
+                start += 1;
+                ptrdiff_t c_count = end - start;
+                string s = str_init();
+                auto e = create_string(&s, start, c_count);
+                if (KV_IS_ERROR(e)) {
+                    free_str(&s);
+                    t.tok_t = KV_TOK_ERR;
+                    if (IS_EQUAL(t.v.err, KV_ERR_INVAL_ARGS))
+                        t.v.err = KV_ERR_INPUT;
+                    else
+                        t.v.err = e;
+                    return t;
+                }
+                t.tok_t = get_tok_type(&s);
+                if (IS_EQUAL(t.tok_t, KV_TOK_ERR)) {
+                    free_str(&s);
+                    t.v.err = KV_ERR_TOK_INVAL;
+                }
+                t.v.token = s;
+                *data = end + 1;
+                return t;
+            }
+            break;
         case KV_PARSE_SINGLE_QUOTE:
+            if (IS_EQUAL(**data, '"'))
+                state = KV_PARSE_DOUBLE_QUOTE;
+            else if (IS_NOT_EQUAL(**data, '\''))
+                state = KV_PARSE_NORMAL;
+            else {
+                end = get_next_char(*data + 1, '\'');
+                if (IS_EQUAL(*end, '\0')) {
+                    t.tok_t = KV_TOK_ERR;
+                    t.v.err = KV_ERR_TOK_INVAL;
+                    return t;
+                }
+                start += 1;
+                ptrdiff_t c_count = end - start;
+                string s = str_init();
+                auto e = create_string(&s, start, c_count);
+                if (KV_IS_ERROR(e)) {
+                    free_str(&s);
+                    t.tok_t = KV_TOK_ERR;
+                    if (IS_EQUAL(t.v.err, KV_ERR_INVAL_ARGS))
+                        t.v.err = KV_ERR_INPUT;
+                    else
+                        t.v.err = e;
+                    return t;
+                }
+                t.tok_t = get_tok_type(&s);
+                if (IS_EQUAL(t.tok_t, KV_TOK_ERR)) {
+                    free_str(&s);
+                    t.v.err = KV_ERR_TOK_INVAL;
+                }
+                t.v.token = s;
+                *data = end + 1;
+                return t;
+            }
+            break;
         default:
             return t;
             break;
@@ -171,7 +258,6 @@ static tokens_t kv_get_tokens(string *line) {
                      .token_count = 0,
                      .token_capacity = 0,
                      .tokens = NULL};
-    constexpr int32_t DEFAULT_TOK_LIMIT = 3;
 
     if (IS_NULL(line) || KV_IS_ERROR(line->err)) {
         tkns.err = KV_ERR_INVAL_ARGS;
@@ -191,7 +277,7 @@ static tokens_t kv_get_tokens(string *line) {
 
     while (true) {
         token_t t = get_next_token(&data);
-        if (IS_EQUAL(t.tok_t, KV_TOKEN_ERR)) {
+        if (IS_EQUAL(t.tok_t, KV_TOK_ERR)) {
             if (IS_NOT_EQUAL(t.v.err, KV_ERR_NOT_INIT))
                 tkns.err = t.v.err;
             break;
@@ -216,7 +302,6 @@ static tokens_t kv_get_tokens(string *line) {
     tkns.tokens[tkns.token_count] = NULL;
     return tkns;
 }
-/*
 static kv_cmd_t kv_parse_tokens(const tokens_t *ts) {
     kv_cmd_t cmd = {.cmd = KV_CMD_ERR, .val.err = KV_ERR_NOT_INIT};
     if (IS_NULL(ts) || KV_IS_ERROR(ts->err) ||
@@ -225,9 +310,15 @@ static kv_cmd_t kv_parse_tokens(const tokens_t *ts) {
         cmd.val.err = KV_ERR_INVAL_ARGS;
         return cmd;
     }
+    if (IS_NOT_EQUAL(ts->tokens[0]->tok_t, KV_TOK_CMD)) {
+        cmd.cmd = KV_CMD_ERR;
+        cmd.val.err = KV_ERR_TOK_ORDER;
+    }
     
+
     return cmd;
 }
+/*
 static kv_error_t exec_cmd(kv_cmd_t * cmd) {
     kv_error_t e = KV_ERR_NOT_INIT;
     return e;
@@ -242,13 +333,14 @@ static void print_all_tokens(tokens_t *tok) {
         printf("[" C_FG_BRIGHT_YELLOW "%02lu" RESET "] [" C_FG_BRIGHT_YELLOW
                "%s" RESET "] ",
                i, get_token_type_str(t->tok_t));
-        if (IS_EQUAL(tok->tokens[i]->tok_t, KV_TOKEN_ERR))
+        if (IS_EQUAL(tok->tokens[i]->tok_t, KV_TOK_ERR))
             printf("[" C_FG_BRIGHT_YELLOW "%s" RESET "]\n",
                    get_error_msg(t->v.err));
         else
             printf("[" C_FG_BRIGHT_YELLOW "%s" RESET "]\n", t->v.token.s.data);
         i++;
     }
+    printf(C_FG_BRIGHT_GREEN "Successfully Parsed input to Tokens!\n" RESET);
 }
 static void free_tokens(tokens_t *t) {
     if (IS_NOT_NULL(t)) {
@@ -258,13 +350,13 @@ static void free_tokens(tokens_t *t) {
                 /*
                  * NOTE:
                  * .
-                 * KV_TOKEN_CMD and KV_TOKEN_STR contain an owning
+                 * KV_TOK_CMD and KV_TOK_STR contain an owning
                  * string whose data was allocated by create_string().
                  * .
-                 * KV_TOKEN_ERR contains an error value in the union,
+                 * KV_TOK_ERR contains an error value in the union,
                  * so there is no string to free.
                  */
-                if (tok->tok_t == KV_TOKEN_CMD || tok->tok_t == KV_TOKEN_STR)
+                if (tok->tok_t == KV_TOK_CMD || tok->tok_t == KV_TOK_STR)
                     free_str(&tok->v.token);
                 free(tok);
                 t->tokens[i] = NULL;
@@ -277,40 +369,59 @@ static void free_tokens(tokens_t *t) {
         t->token_capacity = 0;
     }
 }
+static void free_cmd(kv_cmd_t *c) {
+    if (IS_NOT_NULL(c) && IS_NOT_EQUAL(c->cmd, KV_CMD_ERR)) {
+        free_str(c->val.data.key);
+        free_str(c->val.data.val);
+    }
+}
 static kv_error_t repl() {
     kv_error_t status = 0;
     // stdin = freopen("./private/input.txt", "r", stdin);
     while (true) {
         printf(C_FG_BRIGHT_GREEN "__$ " RESET);
+        // printf(C_FG_RED "---------------------------\n" RESET);
         string line = str_init();
         get_line(&line, stdin);
         if (KV_IS_OK(line.err) && line.s.data) {
-            // print_line_detail(&line, 'm');
+            print_line_detail(&line, 'c');
+
             tokens_t t = kv_get_tokens(&line);
             if (KV_IS_ERROR(t.err)) {
                 kv_print_err(t.err);
                 status = t.err;
+                // free_str(&line);
+                // free_tokens(&t);
+                continue;
             }
             print_all_tokens(&t);
-            /*
-            kv_cmd_t cmd = kv_parse_tokens(&tokens);
+
+            kv_cmd_t cmd = kv_parse_tokens(&t);
             if (IS_EQUAL(cmd.cmd, KV_CMD_ERR)) {
+                PRINT_DEBUG_LINE("")
                 kv_print_err(cmd.val.err);
                 status = cmd.val.err;
+                // free_str(&line);
+                // free_tokens(&t);
+                // free_cmd(&cmd);
+                continue;
             }
+            /*
             status = exec_cmd(&cmd);
-            free_cmd(&cmd);
              */
+            free_cmd(&cmd);
             free_tokens(&t);
             /* TODO: Temporary exit function to be removed */
             if (!strncmp(__cmds[KV_CMD_EXIT], get_c_string(&line),
                          strlen(__cmds[KV_CMD_EXIT]))) {
                 free_str(&line);
                 status = EXIT_SUCCESS;
+                // printf(C_FG_RED "---------------------------\n" RESET);
                 break;
             }
             free_str(&line);
         }
+        // printf(C_FG_RED "---------------------------\n" RESET);
     }
     return status;
 }

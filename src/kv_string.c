@@ -81,10 +81,10 @@ void print_line_detail(string *s, const char mode) {
     if (IS_NULL(s))
         return;
     printf("------------------------------\n");
-    printf("Line Capacity:     [%lu]\n"
-           "Line UTF8 Length:  [%lu]\n"
-           "Line Bytes Length: [%lu]\n"
-           "Line:              ",
+    printf("| Line Capacity:     [%4lu]  |\n"
+           "| Line UTF8 Length:  [%4lu]  |\n"
+           "| Line Bytes Length: [%4lu]  |\n"
+           "| Line:              ",
            s->s.capacity, s->s.utf_len, s->s.byte_len);
     print_raw_string(s, mode);
     printf("------------------------------\n");

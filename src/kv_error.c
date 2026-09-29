@@ -16,7 +16,10 @@ char *get_error_msg(kv_error_t e) {
     case KV_ERR_NOT_INIT:
         return "Variables Not Initialised";
     case KV_ERR_TOK_INVAL:
-        return "Invalid tokes";
+        return "Invalid tokens";
+    case KV_ERR_TOK_ORDER:
+        return "Invalid token order!\n" C_FG_BRIGHT_YELLOW
+               "Usage: <cmd> <key> <val>\nUse HELP for more info!";
     case KV_ERR_INPUT:
         return "Invalid Input";
     default:
