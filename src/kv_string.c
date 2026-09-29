@@ -13,7 +13,8 @@
 #define _1_KB 1024
 #define _DEFAULT_LINE_SIZE (_1_KB / 4)
 
-static size_t utf_str_len(const uint8_t *s) {
+/* INFO: Private Functions */
+static size_t utf_str_len(bytes restrict s) {
     size_t count = 0;
     while (*s) {
         count += ((*s & 0xC0) != 0x80);
@@ -23,20 +24,20 @@ static size_t utf_str_len(const uint8_t *s) {
 }
 static void print_loop_single(const char *restrict format, const string *line) {
     assert(format != NULL && line != NULL);
-    size_t byte_len = line->s->byte_len;
+    size_t byte_len = line->s.byte_len;
     size_t i = 0;
-    while ('\0' != line->s->data[i] && i < byte_len) {
-        printf(format, line->s->data[i]);
+    while ('\0' != line->s.data[i] && i < byte_len) {
+        printf(format, line->s.data[i]);
         i++;
     }
     printf("\n");
 }
 static void print_loop_double(const char *restrict format, const string *line) {
     assert(format != NULL && line != NULL);
-    size_t byte_len = line->s->byte_len;
+    size_t byte_len = line->s.byte_len;
     size_t i = 0;
-    while ('\0' != line->s->data[i] && i < byte_len) {
-        printf(format, line->s->data[i], line->s->data[i]);
+    while ('\0' != line->s.data[i] && i < byte_len) {
+        printf(format, line->s.data[i], line->s.data[i]);
         i++;
     }
     printf("\n");
@@ -44,7 +45,7 @@ static void print_loop_double(const char *restrict format, const string *line) {
 static void print_raw_string(string *restrict line, const char mode) {
     if (!line)
         return;
-    if (line->s->capacity < 1 || !line->s->data)
+    if (line->s.capacity < 1 || !line->s.data)
         return;
     switch (mode) {
     case 'c':
@@ -60,7 +61,15 @@ static void print_raw_string(string *restrict line, const char mode) {
     }
     return;
 }
+static _str get_str(size_t capacity) {
+    _str s = {.capacity = capacity, .byte_len = 0, .data = 0, .utf_len = 0};
+    s.data = malloc(capacity);
+    if (capacity != 0 && IS_EQUAL(s.data, NULL))
+        s.data = NULL;
+    return s;
+}
 
+/* INFO: Public Functions */
 /*
  * c: Character Mode
  *
@@ -69,109 +78,97 @@ static void print_raw_string(string *restrict line, const char mode) {
  * m: Multiple Mode (c+n)
  */
 void print_line_detail(string *s, const char mode) {
-    if (!s || !(s->s))
+    if (IS_NULL(s))
         return;
     printf("------------------------------\n");
     printf("Line Capacity:     [%lu]\n"
            "Line UTF8 Length:  [%lu]\n"
            "Line Bytes Length: [%lu]\n"
            "Line:              ",
-           s->s->capacity, s->s->utf_len, s->s->byte_len);
+           s->s.capacity, s->s.utf_len, s->s.byte_len);
     print_raw_string(s, mode);
     printf("------------------------------\n");
 }
-
-/*
- * cap = Capacity of the string
- */
-static _str *get_str(size_t cap) {
-    _str *s = malloc(sizeof(_str));
-    if (!s)
-        return NULL;
-    s->data = malloc(cap);
-    s->capacity = cap;
-    if (cap != 0 && IS_EQUAL(s->data, NULL)) {
-        free(s);
-        s = NULL;
-    }
-    return s;
-}
-
 void get_line(string *s, FILE *f) {
     if (!s || !f)
         return;
     s->err = KV_ERR_NONE;
     s->s = get_str(_DEFAULT_LINE_SIZE);
-    if (!s->s) {
+    if (IS_NULL(s->s.data)) {
         s->err = KV_ERR_MEM_ALLOC;
         free_str(s);
         return;
     }
-    size_t char_count = 0;
-    int c = fgetc(f);
+    size_t byte_count = 0;
+    Rune c = fgetc(f);
     while (IS_NOT_EQUAL(c, '\n') && IS_NOT_EQUAL(c, EOF)) {
         if (IS_EQUAL(c, '\b')) {
-            /* ERROR: Currently cannot handle id an utf8 2 or more byte
+            /* ERROR: Currently cannot handle if an utf8 2 or more byte
              *        is entered and '\b' is pressed.
              */
-            if (char_count > 0)
-                char_count--;
+            if (byte_count > 0)
+                byte_count--;
         } else if (IS_NOT_EQUAL(c, '\n') && c > 1 && c < 32) {
             c = fgetc(f);
             continue;
         } else {
-            s->s->data[char_count] = (uint8_t)c;
-            char_count++;
-            if ((char_count + 1) > s->s->capacity) {
-                uint8_t *temp = malloc(s->s->capacity + _DEFAULT_LINE_SIZE);
+            s->s.data[byte_count] = (uint8_t)c;
+            byte_count++;
+            if ((byte_count + 1) > s->s.capacity) {
+                bytes temp = malloc(s->s.capacity + _DEFAULT_LINE_SIZE);
                 if (!temp) {
                     s->err = KV_ERR_MEM_ALLOC;
                     free_str(s);
                 }
-                for (size_t i = 0; i < char_count; i++)
-                    temp[i] = s->s->data[i];
+                for (size_t i = 0; i < byte_count; i++)
+                    temp[i] = s->s.data[i];
 
-                s->s->capacity += _DEFAULT_LINE_SIZE;
-                free(s->s->data);
-                s->s->data = temp;
+                s->s.capacity += _DEFAULT_LINE_SIZE;
+                free(s->s.data);
+                s->s.data = temp;
             }
         }
         c = fgetc(f);
     }
-    s->s->data[char_count] = '\0';
-    s->s->byte_len = char_count;
-    s->s->utf_len = utf_str_len(s->s->data);
-}
-
-static kv_error_t create_string(string *restrict str, const char *restrict s,
-                                const size_t s_capacity) {
-    if (!str || !s || IS_EQUAL(s_capacity, 0))
-        return KV_ERR_INVAL_ARGS;
-    str->s = malloc(sizeof(_str));
-    if (str->s) {
-        str->s->byte_len = strlen((const char *)s);
-        str->s->utf_len = utf_str_len((const uint8_t *)s);
-        str->s->capacity = s_capacity;
-        str->s->data = (uint8_t *)strndup((const char *)s, str->s->byte_len);
-    } else {
-        return KV_ERR_MEM_ALLOC;
-    }
-
-    return KV_ERR_NONE;
+    s->s.data[byte_count] = '\0';
+    s->s.byte_len = byte_count;
+    s->s.utf_len = utf_str_len(s->s.data);
 }
 void free_str(string *s) {
     if (IS_NOT_EQUAL(s, NULL)) {
-        if (IS_NOT_EQUAL(s->s, NULL)) {
-            if (IS_NOT_EQUAL(s->s->data, NULL))
-                free(s->s->data);
-            free(s->s);
-        }
+        if (IS_NOT_EQUAL(s->s.data, NULL))
+            free(s->s.data);
         s->err = KV_ERR_NONE;
-        s->s = NULL;
+        s->s.data = NULL;
+        s->s.byte_len = 0;
+        s->s.capacity = 0;
+        s->s.utf_len = 0;
     }
 }
-size_t str_len(const string *s) { return s->s->utf_len; }
+size_t str_len(const string *s) { return s->s.utf_len; }
 string str_init() {
-    string s = {.err = KV_ERR_NONE, .s = NULL};
+    string s = {
+        .err = KV_ERR_NONE,
+        .s = {.byte_len = 0, .capacity = 0, .data = NULL, .utf_len = 0}};
     return s;
+}
+kv_error_t create_string(string *restrict str, const bytes restrict s,
+                         const size_t s_len) {
+    if (!str || !s || IS_EQUAL(s_len, 0))
+        return KV_ERR_INVAL_ARGS;
+    *str = str_init();
+    str->s = get_str(s_len + 1);
+    if (!str->s.data)
+        return KV_ERR_MEM_ALLOC;
+    memcpy(str->s.data, s, s_len);
+    str->s.data[s_len] = '\0';
+    str->s.byte_len = s_len;
+    str->s.capacity = s_len + 1;
+    str->s.utf_len = utf_str_len((const bytes)str->s.data);
+    return KV_ERR_NONE;
+}
+char *get_c_string(string *s) {
+    if (s)
+        return (char *)(s->s.data);
+    return NULL;
 }

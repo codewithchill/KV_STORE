@@ -6,22 +6,25 @@
 
 #include <kv/error.h>
 
+typedef uint32_t Rune;
+typedef uint8_t byte;
+typedef byte* bytes;
+
 typedef struct {
-    uint8_t *data;
+    bytes data;
     size_t byte_len;
     size_t utf_len;
     size_t capacity;
 } _str;
-
-typedef struct string {
+typedef struct {
     kv_error_t err;
-    _str *s;
+    _str s;
 } string;
 
-// _str *get_str(size_t cap);
 void get_line(string* s, FILE *f);
-
-size_t str_len(const string* s);
 void free_str(string *str_data);
 void print_line_detail(string *line, const char mode);
+char* get_c_string(string* s);
 string str_init();
+size_t str_len(const string* s);
+kv_error_t create_string(string *restrict str, const bytes restrict s, const size_t s_capacity);

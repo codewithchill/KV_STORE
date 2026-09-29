@@ -8,10 +8,10 @@
 data_node *parse_file_line(data_node *node, string line) {
     if (!node)
         return NULL;
-    if (line.s->capacity < 1 || line.s->byte_len < 1 || !line.s->data)
+    if (line.s.capacity < 1 || line.s.byte_len < 1 || !line.s.data)
         return NULL;
 
-    char *colon = strchr((char *)line.s->data, ':');
+    char *colon = strchr((char *)line.s.data, ':');
     if (!colon)
         return NULL;
     *colon = '\0';
@@ -41,8 +41,8 @@ data_node *load_from_file_if_exists(const char *restrict file_path) {
 
     string line;
     get_line(&line, f);
-    while (IS_NOT_EQUAL(line.s->data, NULL)) {
-        if (IS_NOT_EQUAL(0, line.s->capacity)) {
+    while (IS_NOT_EQUAL(line.s.data, NULL)) {
+        if (IS_NOT_EQUAL(0, line.s.capacity)) {
             free_str(&line);
             break;
         }

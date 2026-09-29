@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+set -e
+echo "Symlink Start..."
+rm .git/hooks/prepare-commit-msg
+ln -s ../../git_hooks/prepare-commit-msg .git/hooks/prepare-commit-msg
+chmod +x git_hooks/prepare-commit-msg

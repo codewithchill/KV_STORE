@@ -3,20 +3,25 @@
 #include <kv/string.h>
 #include <stdio.h>
 
-static char *get_error_msg(kv_error_t e) {
+char *get_error_msg(kv_error_t e) {
     switch (e) {
     case KV_ERR_NONE:
         return "No Error Occured";
     case KV_ERR_MISC:
-        return "Dummy Error";
+        return "Miscellaneous Error";
     case KV_ERR_MEM_ALLOC:
-        return "Dummy Error";
+        return "Memory Allocation Failed";
     case KV_ERR_INVAL_ARGS:
-        return "Dummy Error";
+        return "Invalid Args";
     case KV_ERR_NOT_INIT:
-        return "Dummy Error";
+        return "Variables Not Initialised";
+    case KV_ERR_TOK_INVAL:
+        return "Invalid tokes";
+    case KV_ERR_INPUT:
+        return "Invalid Input";
     default:
-        return "";
+        return "Default Error" C_FG_CYAN
+               "Function Should not reach here!" RESET;
     }
 }
 
