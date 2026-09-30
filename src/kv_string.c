@@ -108,7 +108,7 @@ void get_line(string *s, FILE *f) {
              */
             if (byte_count > 0)
                 byte_count--;
-        } else if (IS_NOT_EQUAL(c, '\n') && c > 1 && c < 32) {
+        } else if (IS_NOT_EQUAL(c, '\t') && c > 1 && c < 32) {
             c = fgetc(f);
             continue;
         } else {
@@ -155,7 +155,7 @@ string str_init() {
 kv_error_t create_string(string *restrict str, const bytes restrict s,
                          const size_t s_len) {
     if (!str || !s || IS_EQUAL(s_len, 0))
-        return KV_ERR_INVAL_ARGS;
+        return KV_ERR_INVAL_ARG;
     *str = str_init();
     str->s = get_str(s_len + 1);
     if (!str->s.data)
