@@ -65,12 +65,12 @@ static const struct {
     const char *cmd_str;
     uint8_t noOfArgs;
 } cmds[] = {
-    {.cmd = KV_CMD_SET, .cmd_str = __cmds[KV_CMD_SET], .noOfArgs = 2},
-    {.cmd = KV_CMD_GET, .cmd_str = __cmds[KV_CMD_GET], .noOfArgs = 1},
-    {.cmd = KV_CMD_DEL, .cmd_str = __cmds[KV_CMD_DEL], .noOfArgs = 1},
-    {.cmd = KV_CMD_SHOW, .cmd_str = __cmds[KV_CMD_SHOW], .noOfArgs = 0},
-    {.cmd = KV_CMD_HELP, .cmd_str = __cmds[KV_CMD_HELP], .noOfArgs = 0},
-    {.cmd = KV_CMD_EXIT, .cmd_str = __cmds[KV_CMD_EXIT], .noOfArgs = 0}};
+    {.cmd = KV_CMD_SET, .cmd_str = __cmds[KV_CMD_SET], .noOfArgs = 2}, /* <key>, <val> */
+    {.cmd = KV_CMD_GET, .cmd_str = __cmds[KV_CMD_GET], .noOfArgs = 1}, /* <key> */
+    {.cmd = KV_CMD_DEL, .cmd_str = __cmds[KV_CMD_DEL], .noOfArgs = 1}, /* <key> */
+    {.cmd = KV_CMD_SHOW, .cmd_str = __cmds[KV_CMD_SHOW], .noOfArgs = 0},  /*  */
+    {.cmd = KV_CMD_HELP, .cmd_str = __cmds[KV_CMD_HELP], .noOfArgs = 0},  /*  */
+    {.cmd = KV_CMD_EXIT, .cmd_str = __cmds[KV_CMD_EXIT], .noOfArgs = 0}}; /*  */
 typedef struct {
     cmd_t cmd;
     union {
@@ -159,7 +159,7 @@ static token_t get_next_token(bytes *data) {
                 if (KV_IS_ERROR(e)) {
                     kv_print_err(e);
                     free_str(&s);
-                    if (IS_EQUAL(t.v.err, KV_ERR_INVAL_ARGS))
+                    if (IS_EQUAL(t.v.err, KV_ERR_INVAL_ARG))
                         t.v.err = KV_ERR_INPUT;
                     else
                         t.v.err = e;
@@ -169,7 +169,7 @@ static token_t get_next_token(bytes *data) {
                 t.tok_t = get_tok_type(&s);
                 if (IS_EQUAL(t.tok_t, KV_TOK_ERR)) {
                     free_str(&s);
-                    t.v.err = KV_ERR_TOK_INVAL;
+                    t.v.err = KV_ERR_INVAL_TOK;
                 }
                 t.v.token = s;
                 *data = end;
@@ -185,7 +185,7 @@ static token_t get_next_token(bytes *data) {
                 end = get_next_char(*data + 1, '"');
                 if (IS_EQUAL(*end, '\0')) {
                     t.tok_t = KV_TOK_ERR;
-                    t.v.err = KV_ERR_TOK_INVAL;
+                    t.v.err = KV_ERR_INVAL_TOK;
                     return t;
                 }
                 start += 1;
@@ -195,7 +195,7 @@ static token_t get_next_token(bytes *data) {
                 if (KV_IS_ERROR(e)) {
                     free_str(&s);
                     t.tok_t = KV_TOK_ERR;
-                    if (IS_EQUAL(t.v.err, KV_ERR_INVAL_ARGS))
+                    if (IS_EQUAL(t.v.err, KV_ERR_INVAL_ARG))
                         t.v.err = KV_ERR_INPUT;
                     else
                         t.v.err = e;
@@ -204,7 +204,7 @@ static token_t get_next_token(bytes *data) {
                 t.tok_t = get_tok_type(&s);
                 if (IS_EQUAL(t.tok_t, KV_TOK_ERR)) {
                     free_str(&s);
-                    t.v.err = KV_ERR_TOK_INVAL;
+                    t.v.err = KV_ERR_INVAL_TOK;
                 }
                 t.v.token = s;
                 *data = end + 1;
@@ -220,7 +220,7 @@ static token_t get_next_token(bytes *data) {
                 end = get_next_char(*data + 1, '\'');
                 if (IS_EQUAL(*end, '\0')) {
                     t.tok_t = KV_TOK_ERR;
-                    t.v.err = KV_ERR_TOK_INVAL;
+                    t.v.err = KV_ERR_INVAL_TOK;
                     return t;
                 }
                 start += 1;
@@ -230,7 +230,7 @@ static token_t get_next_token(bytes *data) {
                 if (KV_IS_ERROR(e)) {
                     free_str(&s);
                     t.tok_t = KV_TOK_ERR;
-                    if (IS_EQUAL(t.v.err, KV_ERR_INVAL_ARGS))
+                    if (IS_EQUAL(t.v.err, KV_ERR_INVAL_ARG))
                         t.v.err = KV_ERR_INPUT;
                     else
                         t.v.err = e;
@@ -239,7 +239,7 @@ static token_t get_next_token(bytes *data) {
                 t.tok_t = get_tok_type(&s);
                 if (IS_EQUAL(t.tok_t, KV_TOK_ERR)) {
                     free_str(&s);
-                    t.v.err = KV_ERR_TOK_INVAL;
+                    t.v.err = KV_ERR_INVAL_TOK;
                 }
                 t.v.token = s;
                 *data = end + 1;
@@ -260,7 +260,7 @@ static tokens_t kv_get_tokens(string *line) {
                      .tokens = NULL};
 
     if (IS_NULL(line) || KV_IS_ERROR(line->err)) {
-        tkns.err = KV_ERR_INVAL_ARGS;
+        tkns.err = KV_ERR_INVAL_ARG;
         return tkns;
     }
 
@@ -302,28 +302,76 @@ static tokens_t kv_get_tokens(string *line) {
     tkns.tokens[tkns.token_count] = NULL;
     return tkns;
 }
-static kv_cmd_t kv_parse_tokens(const tokens_t *ts) {
+static kv_cmd_t kv_parse_tokens(const tokens_t *tks) {
     kv_cmd_t cmd = {.cmd = KV_CMD_ERR, .val.err = KV_ERR_NOT_INIT};
-    if (IS_NULL(ts) || KV_IS_ERROR(ts->err) ||
-        IS_EQUAL(ts->token_capacity, 0) || IS_EQUAL(ts->token_count, 0) ||
-        IS_NULL(ts->tokens)) {
-        cmd.val.err = KV_ERR_INVAL_ARGS;
+    bool is_set = false;
+    if (IS_NULL(tks) || KV_IS_ERROR(tks->err) ||
+        IS_EQUAL(tks->token_capacity, 0) || IS_EQUAL(tks->token_count, 0) ||
+        IS_NULL(tks->tokens)) {
+        is_set = true;
+        cmd.val.err = KV_ERR_INVAL_ARG;
         return cmd;
     }
-    if (IS_NOT_EQUAL(ts->tokens[0]->tok_t, KV_TOK_CMD)) {
+    if (IS_NOT_EQUAL(tks->tokens[0]->tok_t, KV_TOK_CMD)) {
+        is_set = true;
         cmd.cmd = KV_CMD_ERR;
         cmd.val.err = KV_ERR_TOK_ORDER;
+    } else {
+        token_t *tok = tks->tokens[0];
+        kv_cmd_t c = {.cmd = KV_CMD_ERR, .val.err = KV_ERR_NOT_INIT};
+        for (size_t i = 0; i < n_cmds; i++) {
+            if (IS_EQUAL(strlen(cmds[i].cmd_str), tok->v.token.s.byte_len) &&
+                !strcmp(get_c_string(&(tok->v.token)), cmds[i].cmd_str)) {
+                is_set = true;
+                if (IS_NOT_EQUAL(tks->token_count, cmds[i].noOfArgs + 1))
+                    c.val.err = KV_ERR_CMD_ARGS;
+                else {
+                    c.cmd = cmds[i].cmd;
+                    switch (cmds[i].noOfArgs) {
+                    case 0:
+                        c.val.data.key = NULL;
+                        c.val.data.val = NULL;
+                        break;
+                    case 1:
+                        if (IS_NOT_EQUAL(tks->tokens[1]->tok_t, KV_TOK_ERR))
+                            c.val.data.key = &(tks->tokens[1]->v.token);
+                        else {
+                            /* TODO:
+                             * Testing remains for if the the tokens have halid
+                             * first command and invalid subsequest commands
+                             */
+                            c.val.data.key = NULL;
+                        }
+                        break;
+                    case 2:
+                        /* TODO:
+                         * Testing remains for if the the tokens have halid
+                         * first command and invalid subsequest commands
+                         */
+                        if (IS_NOT_EQUAL(tks->tokens[1]->tok_t, KV_TOK_ERR))
+                            c.val.data.key = &(tks->tokens[1]->v.token);
+                        else
+                            c.val.data.key = NULL;
+                        if (IS_NOT_EQUAL(tks->tokens[2]->tok_t, KV_TOK_ERR))
+                            c.val.data.val = &(tks->tokens[2]->v.token);
+                        else
+                            c.val.data.val = NULL;
+                    }
+                }
+                cmd = c;
+            }
+        }
     }
-    
-
+    if (!is_set) {
+        cmd.cmd = KV_CMD_ERR;
+        cmd.val.err = KV_ERR_INVAL_CMD;
+    }
     return cmd;
 }
-/*
-static kv_error_t exec_cmd(kv_cmd_t * cmd) {
+static kv_error_t exec_cmd(kv_cmd_t *cmd) {
     kv_error_t e = KV_ERR_NOT_INIT;
     return e;
 }
-*/
 static void print_all_tokens(tokens_t *tok) {
     if (IS_NULL(tok) || KV_IS_ERROR(tok->err))
         return;
@@ -378,37 +426,39 @@ static void free_cmd(kv_cmd_t *c) {
 static kv_error_t repl() {
     kv_error_t status = 0;
     // stdin = freopen("./private/input.txt", "r", stdin);
+    // stdout = freopen("./private/output.txt", "w", stdout);
     while (true) {
         printf(C_FG_BRIGHT_GREEN "__$ " RESET);
-        // printf(C_FG_RED "---------------------------\n" RESET);
+        // printf(C_FG_BRIGHT_YELLOW "---------------------------\n" RESET);
         string line = str_init();
         get_line(&line, stdin);
         if (KV_IS_OK(line.err) && line.s.data) {
-            print_line_detail(&line, 'c');
+            print_line_detail(&line, 'm');
 
             tokens_t t = kv_get_tokens(&line);
             if (KV_IS_ERROR(t.err)) {
                 kv_print_err(t.err);
                 status = t.err;
-                // free_str(&line);
-                // free_tokens(&t);
+                free_tokens(&t);
+                free_str(&line);
+                // printf(C_FG_BRIGHT_YELLOW
+                //        "---------------------------\n" RESET);
                 continue;
             }
             print_all_tokens(&t);
 
             kv_cmd_t cmd = kv_parse_tokens(&t);
             if (IS_EQUAL(cmd.cmd, KV_CMD_ERR)) {
-                PRINT_DEBUG_LINE("")
                 kv_print_err(cmd.val.err);
                 status = cmd.val.err;
-                // free_str(&line);
-                // free_tokens(&t);
-                // free_cmd(&cmd);
+                free_cmd(&cmd);
+                free_tokens(&t);
+                free_str(&line);
+                // printf(C_FG_BRIGHT_YELLOW
+                //        "---------------------------\n" RESET);
                 continue;
             }
-            /*
             status = exec_cmd(&cmd);
-             */
             free_cmd(&cmd);
             free_tokens(&t);
             /* TODO: Temporary exit function to be removed */
@@ -416,12 +466,13 @@ static kv_error_t repl() {
                          strlen(__cmds[KV_CMD_EXIT]))) {
                 free_str(&line);
                 status = EXIT_SUCCESS;
-                // printf(C_FG_RED "---------------------------\n" RESET);
+                // printf(C_FG_BRIGHT_YELLOW
+                //        "---------------------------\n" RESET);
                 break;
             }
             free_str(&line);
         }
-        // printf(C_FG_RED "---------------------------\n" RESET);
+        // printf(C_FG_BRIGHT_YELLOW "---------------------------\n" RESET);
     }
     return status;
 }
