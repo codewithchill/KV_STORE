@@ -13,6 +13,13 @@
 #define _1_KB 1024
 #define _DEFAULT_LINE_SIZE (_1_KB / 4)
 
+struct _str {
+    bytes data;
+    size_t byte_len;
+    size_t utf_len;
+    size_t capacity;
+};
+
 /* INFO: Private Functions */
 static size_t utf_str_len(bytes restrict s) {
     size_t count = 0;
@@ -24,20 +31,20 @@ static size_t utf_str_len(bytes restrict s) {
 }
 static void print_loop_single(const char *restrict format, const string *line) {
     assert(format != NULL && line != NULL);
-    size_t byte_len = line->s.byte_len;
+    size_t byte_len = line->s->byte_len;
     size_t i = 0;
-    while ('\0' != line->s.data[i] && i < byte_len) {
-        printf(format, line->s.data[i]);
+    while ('\0' != line->s->data[i] && i < byte_len) {
+        printf(format, line->s->data[i]);
         i++;
     }
     printf("\n");
 }
 static void print_loop_double(const char *restrict format, const string *line) {
     assert(format != NULL && line != NULL);
-    size_t byte_len = line->s.byte_len;
+    size_t byte_len = line->s->byte_len;
     size_t i = 0;
-    while ('\0' != line->s.data[i] && i < byte_len) {
-        printf(format, line->s.data[i], line->s.data[i]);
+    while ('\0' != line->s->data[i] && i < byte_len) {
+        printf(format, line->s->data[i], line->s->data[i]);
         i++;
     }
     printf("\n");
@@ -45,7 +52,7 @@ static void print_loop_double(const char *restrict format, const string *line) {
 static void print_raw_string(string *restrict line, const char mode) {
     if (!line)
         return;
-    if (line->s.capacity < 1 || !line->s.data)
+    if (line->s->capacity < 1 || !line->s->data)
         return;
     switch (mode) {
     case 'c':
@@ -61,15 +68,30 @@ static void print_raw_string(string *restrict line, const char mode) {
     }
     return;
 }
-static _str get_str(size_t capacity) {
-    _str s = {.capacity = capacity, .byte_len = 0, .data = 0, .utf_len = 0};
-    s.data = malloc(capacity);
-    if (capacity != 0 && IS_EQUAL(s.data, NULL))
-        s.data = NULL;
+
+static _str *get_str(size_t capacity) {
+    if (IS_EQUAL(capacity, 0))
+        return NULL;
+    _str *s = malloc(sizeof(*s));
+    if (IS_NULL(s))
+        return NULL;
+    s->data = malloc(capacity);
+    if (IS_NULL(s->data)) {
+        s->data = NULL;
+        free(s);
+    }
+    s->capacity = capacity;
+    s->byte_len = 0;
+    s->utf_len = 0;
     return s;
 }
 
-/* INFO: Public Functions */
+/* ======================================================
+ * INFO: Public Functions
+ *
+ * ======================================================
+ */
+
 /*
  * c: Character Mode
  *
@@ -85,18 +107,18 @@ void print_line_detail(string *s, const char mode) {
            "| Line UTF8 Length:  [%4lu]  |\n"
            "| Line Bytes Length: [%4lu]  |\n"
            "| Line:              ",
-           s->s.capacity, s->s.utf_len, s->s.byte_len);
+           s->s->capacity, s->s->utf_len, s->s->byte_len);
     print_raw_string(s, mode);
     printf("------------------------------\n");
 }
-void get_line(string *s, FILE *f) {
-    if (!s || !f)
+void get_line(string *restrict s, FILE *f) {
+    if (IS_NULL(s) || IS_NULL(f))
         return;
     s->err = KV_ERR_NONE;
     s->s = get_str(_DEFAULT_LINE_SIZE);
-    if (IS_NULL(s->s.data)) {
+    if (IS_NULL(s->s)) {
         s->err = KV_ERR_MEM_ALLOC;
-        free_str(s);
+        s->s = NULL;
         return;
     }
     size_t byte_count = 0;
@@ -112,44 +134,41 @@ void get_line(string *s, FILE *f) {
             c = fgetc(f);
             continue;
         } else {
-            s->s.data[byte_count] = (uint8_t)c;
+            s->s->data[byte_count] = (uint8_t)c;
             byte_count++;
-            if ((byte_count + 1) > s->s.capacity) {
-                bytes temp = malloc(s->s.capacity + _DEFAULT_LINE_SIZE);
+            if ((byte_count + 1) > s->s->capacity) {
+                bytes temp = malloc(s->s->capacity + _DEFAULT_LINE_SIZE);
                 if (!temp) {
                     s->err = KV_ERR_MEM_ALLOC;
                     free_str(s);
                 }
                 for (size_t i = 0; i < byte_count; i++)
-                    temp[i] = s->s.data[i];
+                    temp[i] = s->s->data[i];
 
-                s->s.capacity += _DEFAULT_LINE_SIZE;
-                free(s->s.data);
-                s->s.data = temp;
+                s->s->capacity += _DEFAULT_LINE_SIZE;
+                free(s->s->data);
+                s->s->data = temp;
             }
         }
         c = fgetc(f);
     }
-    s->s.data[byte_count] = '\0';
-    s->s.byte_len = byte_count;
-    s->s.utf_len = utf_str_len(s->s.data);
+    s->s->data[byte_count] = '\0';
+    s->s->byte_len = byte_count;
+    s->s->utf_len = utf_str_len(s->s->data);
 }
 void free_str(string *s) {
-    if (IS_NOT_EQUAL(s, NULL)) {
-        if (IS_NOT_EQUAL(s->s.data, NULL))
-            free(s->s.data);
-        s->err = KV_ERR_NONE;
-        s->s.data = NULL;
-        s->s.byte_len = 0;
-        s->s.capacity = 0;
-        s->s.utf_len = 0;
+    if (IS_NOT_NULL(s)) {
+        if (IS_NOT_NULL(s->s)) {
+            if (IS_NOT_NULL(s->s->data))
+                free(s->s->data);
+            free(s->s);
+            s->s = NULL;
+        }
     }
 }
-size_t str_len(const string *s) { return s->s.utf_len; }
+size_t str_len(const string *s) { return s->s->utf_len; }
 string str_init() {
-    string s = {
-        .err = KV_ERR_NOT_INIT,
-        .s = {.byte_len = 0, .capacity = 0, .data = NULL, .utf_len = 0}};
+    string s = {.err = KV_ERR_NOT_INIT, .s = get_str(0)};
     return s;
 }
 kv_error_t create_string(string *restrict str, const bytes restrict s,
@@ -158,17 +177,23 @@ kv_error_t create_string(string *restrict str, const bytes restrict s,
         return KV_ERR_INVAL_ARG;
     *str = str_init();
     str->s = get_str(s_len + 1);
-    if (!str->s.data)
+    if (!str->s->data)
         return KV_ERR_MEM_ALLOC;
-    memcpy(str->s.data, s, s_len);
-    str->s.data[s_len] = '\0';
-    str->s.byte_len = s_len;
-    str->s.capacity = s_len + 1;
-    str->s.utf_len = utf_str_len((const bytes)str->s.data);
+    memcpy(str->s->data, s, s_len);
+    str->s->data[s_len] = '\0';
+    str->s->byte_len = s_len;
+    str->s->capacity = s_len + 1;
+    str->s->utf_len = utf_str_len((const bytes)str->s->data);
     return KV_ERR_NONE;
 }
-char *get_c_string(string *s) {
+bool is_str_ok(const string s) {
+    if (IS_NOT_NULL(s.s) && IS_NOT_NULL(s.s->data) && s.s->capacity >= 1 &&
+        s.s->byte_len >= 1)
+        return true;
+    return false;
+}
+char *get_c_string(const string *s) {
     if (s)
-        return (char *)(s->s.data);
+        return (char *)(s->s->data);
     return NULL;
 }

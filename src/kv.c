@@ -19,7 +19,7 @@ static kv_error_t repl(data_node* kv_head) {
         printf(C_FG_BRIGHT_GREEN "__$ " RESET);
         string line = str_init();
         get_line(&line, stdin);
-        if (KV_IS_OK(line.err) && line.s.data) {
+        if (is_str_ok(line)) {
             tokens_t t = kv_get_tokens(&line);
             if (KV_IS_ERROR(t.err)) {
                 kv_print_err(t.err);
