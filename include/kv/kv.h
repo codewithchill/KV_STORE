@@ -3,8 +3,6 @@
 #include <kv/error.h>
 #include <kv/string.h>
 
-typedef struct data_node data_node;
-typedef struct kv_cmd_t kv_cmd_t;
 typedef struct {
     string *key, *val;
 } kv_pair;
@@ -15,6 +13,7 @@ typedef struct kv_args {
         const char *filepath;
     } val;
 } kv_args;
+typedef struct data_node data_node;
 typedef struct data_node {
     kv_error_t err;
     kv_pair data;

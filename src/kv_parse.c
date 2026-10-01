@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+// clang-format off
 static constexpr int32_t DEFAULT_TOK_LIMIT = 3;
 static constexpr char __cmds[][5] = {"SET",  "GET",  "DEL",
                                      "SHOW", "HELP", "EXIT"};
@@ -21,7 +22,7 @@ static const struct {
     {.cmd = KV_CMD_SHOW, .cmd_str = __cmds[KV_CMD_SHOW], .noOfArgs = 0},  /*  */
     {.cmd = KV_CMD_HELP, .cmd_str = __cmds[KV_CMD_HELP], .noOfArgs = 0},  /*  */
     {.cmd = KV_CMD_EXIT, .cmd_str = __cmds[KV_CMD_EXIT], .noOfArgs = 0}}; /*  */
-
+// clang-format off
 
 /*static const char *get_token_type_str(token_type t) {
     switch (t) {
@@ -66,7 +67,7 @@ static token_type get_tok_type(string *s) {
     token_type t = KV_TOK_ERR;
     bool is_set = false;
     for (size_t i = 0; i < n_cmds; i++) {
-        auto s_len = s->s.byte_len;
+        auto s_len = str_len(s);
         auto cmd_len = strlen(__cmds[i]);
         if (IS_NOT_EQUAL(s_len, cmd_len))
             continue;
@@ -244,12 +245,6 @@ void free_tokens(tokens_t *t) {
         t->token_capacity = 0;
     }
 }
-void free_cmd(kv_cmd_t *c) {
-    if (IS_NOT_NULL(c) && IS_NOT_EQUAL(c->cmd, KV_CMD_ERR)) {
-        free_str(c->val.data.key);
-        free_str(c->val.data.val);
-    }
-}
 
 tokens_t kv_get_tokens(string *line) {
     tokens_t tkns = {.err = KV_ERR_NOT_INIT,
@@ -271,7 +266,7 @@ tokens_t kv_get_tokens(string *line) {
     }
     for (size_t i = 0; i < DEFAULT_TOK_LIMIT; i++)
         tkns.tokens[i] = NULL;
-    auto data = line->s.data;
+    auto data = (bytes)get_c_string(line);
 
     while (true) {
         token_t t = get_next_token(&data);
@@ -318,7 +313,7 @@ kv_cmd_t kv_parse_tokens(const tokens_t *tks) {
         token_t *tok = tks->tokens[0];
         kv_cmd_t c = {.cmd = KV_CMD_ERR, .val.err = KV_ERR_NOT_INIT};
         for (size_t i = 0; i < n_cmds; i++) {
-            if (IS_EQUAL(strlen(cmds[i].cmd_str), tok->v.token.s.byte_len) &&
+            if (IS_EQUAL(strlen(cmds[i].cmd_str), str_len(&(tok->v.token))) &&
                 !strcmp(get_c_string(&(tok->v.token)), cmds[i].cmd_str)) {
                 is_set = true;
                 if (IS_NOT_EQUAL(tks->token_count, cmds[i].noOfArgs + 1))
@@ -365,41 +360,4 @@ kv_cmd_t kv_parse_tokens(const tokens_t *tks) {
         cmd.val.err = KV_ERR_INVAL_CMD;
     }
     return cmd;
-}
-kv_error_t exec_cmd(kv_cmd_t *cmd, bool *is_exit, data_node* kv_head) {
-    kv_error_t e = KV_ERR_NOT_INIT;
-    if (IS_NULL(cmd) || IS_NULL(is_exit))
-        e = KV_ERR_INVAL_ARG;
-    if (IS_EQUAL(cmd->cmd, KV_CMD_ERR))
-        e = KV_ERR_INVAL_CMD;
-    e = KV_ERR_NONE;
-    switch (cmd->cmd) {
-    case KV_CMD_SET:
-        cmd_set(kv_head);
-        printf("Setting Key: [%s] with value [%s]\n",
-               get_c_string(cmd->val.data.key),
-               get_c_string(cmd->val.data.val));
-        break;
-    case KV_CMD_GET:
-        printf("Key: %s\nVal: Unknown\n", get_c_string(cmd->val.data.key));
-        break;
-    case KV_CMD_DEL:
-        printf("Deleting key-value pair with key: %s\n",
-               get_c_string(cmd->val.data.key));
-        break;
-    case KV_CMD_SHOW:
-        printf("Printing all key-value pairs.....\n");
-        break;
-    case KV_CMD_HELP:
-        cmd_help();
-        break;
-    case KV_CMD_EXIT:
-        /* TODO: Handling all the memory, file wrintg etc */
-        printf(C_FG_BRIGHT_BLUE BOLD RAPID_BLINK "Exiting.........\n" RESET);
-        *is_exit = true;
-        break;
-    default:
-        break;
-    }
-    return e;
 }
