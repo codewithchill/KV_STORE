@@ -12,7 +12,7 @@ char *get_error_msg(kv_error_t e) {
     case KV_ERR_MEM_ALLOC:
         return "Memory Allocation Failed";
     case KV_ERR_INVAL_ARG:
-        return "Invalid Arguments";
+        return "Invalid Function Arguments";
     case KV_ERR_INVAL_TOK:
         return "Invalid tokens syntax";
     case KV_ERR_INVAL_CMD:

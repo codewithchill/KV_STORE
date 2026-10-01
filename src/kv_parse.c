@@ -24,7 +24,7 @@ static const struct {
     {.cmd = KV_CMD_EXIT, .cmd_str = __cmds[KV_CMD_EXIT], .noOfArgs = 0}}; /*  */
 // clang-format off
 
-/*static const char *get_token_type_str(token_type t) {
+static const char *get_token_type_str(token_type t) {
     switch (t) {
     case KV_TOK_CMD:
         return "CMD";
@@ -35,7 +35,7 @@ static const struct {
     default:
         return "";
     }
-}*/
+}
 static bool isWhiteSpace(byte c) {
     /* TODO: Improve to support rune also*/
     return (IS_EQUAL(c, '\n') || IS_EQUAL(c, '\v') || IS_EQUAL(c, '\t') ||
@@ -99,7 +99,7 @@ static token_t get_next_token(bytes *data) {
             else {
                 end = get_end(*data);
                 ptrdiff_t c_count = end - start;
-                string s;
+                string *s;
                 kv_error_t e = create_string(&s, start, c_count);
                 if (KV_IS_ERROR(e)) {
                     kv_print_err(e);
@@ -111,7 +111,7 @@ static token_t get_next_token(bytes *data) {
                     t.v.err = e;
                     return t;
                 }
-                t.tok_t = get_tok_type(&s);
+                t.tok_t = get_tok_type(s);
                 if (IS_EQUAL(t.tok_t, KV_TOK_ERR)) {
                     free_str(&s);
                     t.v.err = KV_ERR_INVAL_TOK;
@@ -135,7 +135,7 @@ static token_t get_next_token(bytes *data) {
                 }
                 start += 1;
                 ptrdiff_t c_count = end - start;
-                string s = str_init();
+                string *s = str_init();
                 auto e = create_string(&s, start, c_count);
                 if (KV_IS_ERROR(e)) {
                     free_str(&s);
@@ -146,7 +146,7 @@ static token_t get_next_token(bytes *data) {
                         t.v.err = e;
                     return t;
                 }
-                t.tok_t = get_tok_type(&s);
+                t.tok_t = get_tok_type(s);
                 if (IS_EQUAL(t.tok_t, KV_TOK_ERR)) {
                     free_str(&s);
                     t.v.err = KV_ERR_INVAL_TOK;
@@ -170,7 +170,7 @@ static token_t get_next_token(bytes *data) {
                 }
                 start += 1;
                 ptrdiff_t c_count = end - start;
-                string s = str_init();
+                string *s = str_init();
                 auto e = create_string(&s, start, c_count);
                 if (KV_IS_ERROR(e)) {
                     free_str(&s);
@@ -181,7 +181,7 @@ static token_t get_next_token(bytes *data) {
                         t.v.err = e;
                     return t;
                 }
-                t.tok_t = get_tok_type(&s);
+                t.tok_t = get_tok_type(s);
                 if (IS_EQUAL(t.tok_t, KV_TOK_ERR)) {
                     free_str(&s);
                     t.v.err = KV_ERR_INVAL_TOK;
@@ -199,7 +199,7 @@ static token_t get_next_token(bytes *data) {
     return t;
 }
 
-/*static void print_all_tokens(tokens_t *tok) {
+void print_all_tokens(tokens_t *tok) {
     if (IS_NULL(tok) || KV_IS_ERROR(tok->err))
         return;
     size_t i = 0;
@@ -212,11 +212,11 @@ static token_t get_next_token(bytes *data) {
             printf("[" C_FG_BRIGHT_YELLOW "%s" RESET "]\n",
                    get_error_msg(t->v.err));
         else
-            printf("[" C_FG_BRIGHT_YELLOW "%s" RESET "]\n", t->v.token.s.data);
+            printf("[" C_FG_BRIGHT_YELLOW "%s" RESET "]\n", get_c_string(t->v.token));
         i++;
     }
     printf(C_FG_BRIGHT_GREEN "Successfully Parsed input to Tokens!\n" RESET);
-}*/
+}
 /* INFO: Public Functions */
 void free_tokens(tokens_t *t) {
     if (IS_NOT_NULL(t)) {
@@ -252,7 +252,7 @@ tokens_t kv_get_tokens(string *line) {
                      .token_capacity = 0,
                      .tokens = NULL};
 
-    if (IS_NULL(line) || KV_IS_ERROR(line->err)) {
+    if (IS_NULL(line) || !is_str_ok(line)) {
         tkns.err = KV_ERR_INVAL_ARG;
         return tkns;
     }
@@ -313,8 +313,8 @@ kv_cmd_t kv_parse_tokens(const tokens_t *tks) {
         token_t *tok = tks->tokens[0];
         kv_cmd_t c = {.cmd = KV_CMD_ERR, .val.err = KV_ERR_NOT_INIT};
         for (size_t i = 0; i < n_cmds; i++) {
-            if (IS_EQUAL(strlen(cmds[i].cmd_str), str_len(&(tok->v.token))) &&
-                !strcmp(get_c_string(&(tok->v.token)), cmds[i].cmd_str)) {
+            if (IS_EQUAL(strlen(cmds[i].cmd_str), str_len(tok->v.token)) &&
+                !strcmp(get_c_string(tok->v.token), cmds[i].cmd_str)) {
                 is_set = true;
                 if (IS_NOT_EQUAL(tks->token_count, cmds[i].noOfArgs + 1))
                     c.val.err = KV_ERR_CMD_ARGS;
@@ -327,7 +327,7 @@ kv_cmd_t kv_parse_tokens(const tokens_t *tks) {
                         break;
                     case 1:
                         if (IS_NOT_EQUAL(tks->tokens[1]->tok_t, KV_TOK_ERR))
-                            c.val.data.key = &(tks->tokens[1]->v.token);
+                            c.val.data.key = tks->tokens[1]->v.token;
                         else {
                             /* TODO:
                              * Testing remains for if the the tokens have halid
@@ -342,11 +342,11 @@ kv_cmd_t kv_parse_tokens(const tokens_t *tks) {
                          * first command and invalid subsequest commands
                          */
                         if (IS_NOT_EQUAL(tks->tokens[1]->tok_t, KV_TOK_ERR))
-                            c.val.data.key = &(tks->tokens[1]->v.token);
+                            c.val.data.key = tks->tokens[1]->v.token;
                         else
                             c.val.data.key = NULL;
                         if (IS_NOT_EQUAL(tks->tokens[2]->tok_t, KV_TOK_ERR))
-                            c.val.data.val = &(tks->tokens[2]->v.token);
+                            c.val.data.val = tks->tokens[2]->v.token;
                         else
                             c.val.data.val = NULL;
                     }

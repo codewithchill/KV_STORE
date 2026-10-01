@@ -14,7 +14,7 @@ typedef struct {
     token_type tok_t;
     union {
         kv_error_t err;
-        string token;
+        string *token;
     } v;
 } token_t;
 typedef struct {
@@ -25,5 +25,6 @@ typedef struct {
 } tokens_t;
 
 void free_tokens(tokens_t *t);
+void print_all_tokens(tokens_t *tok);
 tokens_t kv_get_tokens(string *line);
 kv_cmd_t kv_parse_tokens(const tokens_t *tks);

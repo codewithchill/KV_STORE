@@ -32,8 +32,8 @@ kv_cmd_t* cmd_init() {
 
 void free_cmd(kv_cmd_t *c) {
     if (IS_NOT_NULL(c) && IS_NOT_EQUAL(c->cmd, KV_CMD_ERR)) {
-        free_str(c->val.data.key);
-        free_str(c->val.data.val);
+        free_str(&(c->val.data.key));
+        free_str(&(c->val.data.val));
     }
 }
 kv_error_t exec_cmd(kv_cmd_t *cmd, bool *is_exit, data_node* kv_head) {

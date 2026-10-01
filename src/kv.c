@@ -5,22 +5,24 @@
 #include <kv/file.h>
 #include <kv/kv.h>
 #include <kv/macros.h>
+#include <kv/parse.h>
 #include <kv/string.h>
 #include <kv/version.h>
-#include <kv/parse.h>
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-static kv_error_t repl(data_node* kv_head) {
+static kv_error_t repl(data_node *kv_head) {
     kv_error_t status = 0;
     bool is_exit = false;
+    // stdin = freopen("./private/input.txt", "r", stdin);
     while (true) {
         printf(C_FG_BRIGHT_GREEN "__$ " RESET);
-        string line = str_init();
-        get_line(&line, stdin);
+        string *line = str_init();
+        get_line(line, stdin);
         if (is_str_ok(line)) {
-            tokens_t t = kv_get_tokens(&line);
+            tokens_t t = kv_get_tokens(line);
             if (KV_IS_ERROR(t.err)) {
                 kv_print_err(t.err);
                 status = t.err;
@@ -42,7 +44,8 @@ static kv_error_t repl(data_node* kv_head) {
             free_cmd(&cmd);
             free_tokens(&t);
             free_str(&line);
-            if (is_exit) break;
+            if (is_exit)
+                break;
         }
     }
     return status;
@@ -68,7 +71,7 @@ static void kv_print_help(const char *restrict PROG_NAME,
                       "\t-h\n"
                       "\t--help        : Prints this help menu.\n";
     printf(C_FG_BRIGHT_CYAN "[%s] Version: %s\n%s\n" RESET C_FG_BRIGHT_YELLOW
-                              "%s" RESET,
+                            "%s" RESET,
            PROG_NAME, VERSION, msg, str);
 }
 /*static void kv_print_all_args(const int argc, const char **restrict argv) {
