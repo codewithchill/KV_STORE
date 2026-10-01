@@ -2,3 +2,6 @@ CompileFlags:
   Add:
     - "-xc"
     - "-std=c23"
+
+Documentation:
+      CommentFormat: Doxygen
