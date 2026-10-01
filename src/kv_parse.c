@@ -1,3 +1,5 @@
+#include "kv/data.h"
+#include "kv/error.h"
 #include <kv/cmds.h>
 #include <kv/kv.h>
 #include <kv/parse.h>
@@ -245,7 +247,6 @@ void free_tokens(tokens_t *t) {
         t->token_capacity = 0;
     }
 }
-
 tokens_t kv_get_tokens(string *line) {
     tokens_t tkns = {.err = KV_ERR_NOT_INIT,
                      .token_count = 0,
@@ -295,63 +296,66 @@ tokens_t kv_get_tokens(string *line) {
     tkns.tokens[tkns.token_count] = NULL;
     return tkns;
 }
-kv_cmd_t kv_parse_tokens(const tokens_t *tks) {
-    kv_cmd_t cmd = {.cmd = KV_CMD_ERR, .val.err = KV_ERR_NOT_INIT};
+kv_cmd_t *kv_parse_tokens(const tokens_t *tks) {
+    kv_cmd_t *cmd = init_cmd();
     bool is_set = false;
     if (IS_NULL(tks) || KV_IS_ERROR(tks->err) ||
         IS_EQUAL(tks->token_capacity, 0) || IS_EQUAL(tks->token_count, 0) ||
         IS_NULL(tks->tokens)) {
         is_set = true;
-        cmd.val.err = KV_ERR_INVAL_ARG;
+        set_cmd_err_value(cmd, KV_ERR_INVAL_ARG);
         return cmd;
     }
     if (IS_NOT_EQUAL(tks->tokens[0]->tok_t, KV_TOK_CMD)) {
         is_set = true;
-        cmd.cmd = KV_CMD_ERR;
-        cmd.val.err = KV_ERR_TOK_ORDER;
+        set_cmd_err_value(cmd, KV_ERR_TOK_ORDER);
     } else {
         token_t *tok = tks->tokens[0];
-        kv_cmd_t c = {.cmd = KV_CMD_ERR, .val.err = KV_ERR_NOT_INIT};
+        kv_cmd_t *c = init_cmd();
         for (size_t i = 0; i < n_cmds; i++) {
             if (IS_EQUAL(strlen(cmds[i].cmd_str), str_len(tok->v.token)) &&
                 !strcmp(get_c_string(tok->v.token), cmds[i].cmd_str)) {
                 is_set = true;
                 if (IS_NOT_EQUAL(tks->token_count, cmds[i].noOfArgs + 1))
-                    c.val.err = KV_ERR_CMD_ARGS;
+                    set_cmd_err_value(c, KV_ERR_CMD_ARGS);
                 else {
-                    c.cmd = cmds[i].cmd;
+                    set_cmd_type(c, cmds[i].cmd);
+
+                    if (IS_NULL(c.val.data)) {
+                        set_cmd_err_value(c, KV_ERR_MEM_ALLOC);
+                        return c;
+                    }
                     switch (cmds[i].noOfArgs) {
-                    case 0:
-                        c.val.data.key = NULL;
-                        c.val.data.val = NULL;
-                        break;
-                    case 1:
-                        if (IS_NOT_EQUAL(tks->tokens[1]->tok_t, KV_TOK_ERR))
-                            c.val.data.key = tks->tokens[1]->v.token;
-                        else {
-                            /* TODO:
-                             * Testing remains for if the the tokens have halid
-                             * first command and invalid subsequest commands
-                             */
-                            c.val.data.key = NULL;
-                        }
-                        break;
-                    case 2:
-                        /* TODO:
-                         * Testing remains for if the the tokens have halid
-                         * first command and invalid subsequest commands
-                         */
-                        if (IS_NOT_EQUAL(tks->tokens[1]->tok_t, KV_TOK_ERR))
-                            c.val.data.key = tks->tokens[1]->v.token;
-                        else
-                            c.val.data.key = NULL;
-                        if (IS_NOT_EQUAL(tks->tokens[2]->tok_t, KV_TOK_ERR))
-                            c.val.data.val = tks->tokens[2]->v.token;
-                        else
-                            c.val.data.val = NULL;
+                        case 0:
+                                                set_kv_pair_key_val(c.val.data, NULL, NULL);
+                                                break;
+                                            case 1: {
+                                                string *k = NULL;
+                                                if (IS_NOT_EQUAL(tks->tokens[1]->tok_t, KV_TOK_ERR)) {
+                                                    char *raw = get_c_string(tks->tokens[1]->v.token);
+                                                    create_string(&k, (bytes)raw, strlen(raw));
+                                                }
+                                                set_kv_pair_key_val(c.val.data, k, NULL);
+                                                break;
+                                            }
+                                            case 2: {
+                                                string *k = NULL;
+                                                string *v = NULL;
+                                                if (IS_NOT_EQUAL(tks->tokens[1]->tok_t, KV_TOK_ERR)) {
+                                                    char *raw_k = get_c_string(tks->tokens[1]->v.token);
+                                                    create_string(&k, (bytes)raw_k, strlen(raw_k));
+                                                }
+                                                if (IS_NOT_EQUAL(tks->tokens[2]->tok_t, KV_TOK_ERR)) {
+                                                    char *raw_v = get_c_string(tks->tokens[2]->v.token);
+                                                    create_string(&v, (bytes)raw_v, strlen(raw_v));
+                                                }
+                                                set_kv_pair_key_val(c.val.data, k, v);
+                                                break;
+                                            }
                     }
                 }
                 cmd = c;
+                break;
             }
         }
     }

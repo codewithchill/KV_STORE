@@ -1,28 +1,27 @@
 #pragma once
 
-#include <kv/kv.h>
+#include <kv/data.h>
+#include <kv/error.h>
 
 typedef enum cmd_t {
-    KV_CMD_SET = 0x00,
-    KV_CMD_GET,
-    KV_CMD_DEL,
-    KV_CMD_SHOW,
-    KV_CMD_HELP,
-    KV_CMD_EXIT,
-    // AT THE END
-    KV_CMD_ERR
+  KV_CMD_SET = 0x00,
+  KV_CMD_GET,
+  KV_CMD_DEL,
+  KV_CMD_SHOW,
+  KV_CMD_HELP,
+  KV_CMD_EXIT,
+  // AT THE END
+  KV_CMD_ERR
 } cmd_t;
 typedef struct kv_cmd_t kv_cmd_t;
 
-struct kv_cmd_t {
-    cmd_t cmd;
-    union {
-        kv_error_t err;
-        kv_pair data;
-    } val;
-};
-
 void cmd_help();
-void cmd_set(data_node* kv_head);
-void free_cmd(kv_cmd_t *c);
-kv_error_t exec_cmd(kv_cmd_t *cmd, bool *is_exit, data_node* kv_head);
+void cmd_set(data_node *kv_head);
+
+kv_cmd_t *init_cmd();
+bool is_cmd_ok(const kv_cmd_t *restrict c);
+void set_cmd_type(kv_cmd_t *restrict c, const cmd_t cmd);
+void set_cmd_err_value(kv_cmd_t *restrict c, const kv_error_t e);
+kv_error_t get_cmd_err(const kv_cmd_t *restrict c);
+void free_cmd(kv_cmd_t **c);
+kv_error_t exec_cmd(kv_cmd_t *cmd, bool *is_exit, data_node *kv_head);

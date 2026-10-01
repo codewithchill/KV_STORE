@@ -1,9 +1,9 @@
 #pragma once
 
-#include <kv/error.h>
-#include <kv/string.h>
 #include <kv/cmds.h>
+#include <kv/error.h>
 #include <kv/kv.h>
+#include <kv/string.h>
 
 typedef enum token_type {
     KV_TOK_CMD,
@@ -27,4 +27,4 @@ typedef struct {
 void free_tokens(tokens_t *t);
 void print_all_tokens(tokens_t *tok);
 tokens_t kv_get_tokens(string *line);
-kv_cmd_t kv_parse_tokens(const tokens_t *tks);
+kv_cmd_t *kv_parse_tokens(const tokens_t *tks);

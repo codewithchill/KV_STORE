@@ -1,0 +1,50 @@
+#include "kv/error.h"
+#include "kv/macros.h"
+#include <kv/data.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct kv_pair {
+    string *key, *val;
+} kv_pair;
+typedef struct data_node {
+    kv_error_t err;
+    kv_pair *data;
+    struct data_node *next, *prev;
+} data_node;
+
+kv_pair *init_key_val() {
+    kv_pair *p = malloc(sizeof(*p));
+    if (IS_NULL(p))
+        return NULL;
+    p->key = NULL;
+    p->val = NULL;
+    return p;
+}
+void free_kv_pair(kv_pair **p) {
+    if (IS_NOT_NULL(p) && IS_NOT_NULL(*p)) {
+        if (IS_NOT_NULL((*p)->key))
+            free_str(&((*p)->key));
+        if (IS_NOT_NULL((*p)->val))
+            free_str(&((*p)->val));
+        free(*p);
+        *p = NULL;
+    }
+}
+string *get_key(const kv_pair *restrict p, kv_error_t *e) {
+    if (IS_NULL(p) || IS_NULL(e))
+        return NULL;
+    return p->key;
+}
+string *get_val(const kv_pair *restrict p, kv_error_t *e) {
+    if (IS_NULL(p) || IS_NULL(e))
+        return NULL;
+    return p->val;
+}
+void set_kv_pair_key_val(kv_pair *p, string *restrict key,
+                         string *restrict val) {
+    if (IS_NULL(p))
+        return;
+    p->key = key;
+    p->val = val;
+}

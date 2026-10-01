@@ -1,11 +1,20 @@
-#include <stdio.h>
-
-#include <kv/ansi.h>
+// #include <kv/ansi.h>
 #include <kv/cmds.h>
+#include <kv/error.h>
+#include <kv/macros.h>
+#include <stdlib.h>
+
+struct kv_cmd_t {
+  cmd_t cmd;
+  union {
+    kv_error_t err;
+    kv_pair *data;
+  } val;
+};
 
 void cmd_set(data_node * /*kv_head*/) { return; }
 void cmd_help() {
-    // clang-format off
+  // clang-format off
     printf(
         C_FG_BRIGHT_YELLOW
             "General Usage: <cmd> <key> <val>\n"
@@ -23,17 +32,36 @@ void cmd_help() {
     // clang-format off
 }
 
-/*
-kv_cmd_t* cmd_init() {
-    kv_cmd_t *c = malloc(sizeof(*c));
+kv_cmd_t *init_cmd() {
+    kv_cmd_t* c = malloc(sizeof(*c));
+    if (IS_NULL(c)) return NULL;
+    set_cmd_err_value(c,KV_ERR_MEM_ALLOC);
     return c;
 }
-*/
-
-void free_cmd(kv_cmd_t *c) {
-    if (IS_NOT_NULL(c) && IS_NOT_EQUAL(c->cmd, KV_CMD_ERR)) {
-        free_str(&(c->val.data.key));
-        free_str(&(c->val.data.val));
+void set_cmd_type(kv_cmd_t* restrict c, const cmd_t cmd) {
+    if (IS_NOT_NULL(c)) c->cmd = cmd;
+}
+void set_cmd_err_value(kv_cmd_t * restrict c, const kv_error_t e) {
+    if (IS_NOT_NULL(c)) {
+        c->cmd = KV_CMD_ERR;
+        c->val.err = e;
+    }
+}
+bool is_cmd_ok(const kv_cmd_t* restrict c) {
+    if (IS_NULL(c)) return KV_ERR_INVAL_ARG;
+    return !IS_EQUAL(c->cmd, KV_CMD_ERR);
+}
+kv_error_t get_cmd_err(const kv_cmd_t* restrict c) {
+    if (IS_NULL(c)) return KV_ERR_INVAL_ARG;
+    if (!is_cmd_ok(c))
+        return c->val.err;
+    return KV_ERR_NONE;
+}
+void free_cmd(kv_cmd_t **c) {
+    if (IS_NOT_NULL(c)) {
+        if (IS_NOT_NULL(*c))
+            free_kv_pair(&((*c)->val.data));
+        *c = NULL;
     }
 }
 kv_error_t exec_cmd(kv_cmd_t *cmd, bool *is_exit, data_node* kv_head) {
@@ -47,15 +75,16 @@ kv_error_t exec_cmd(kv_cmd_t *cmd, bool *is_exit, data_node* kv_head) {
     case KV_CMD_SET:
         cmd_set(kv_head);
         printf("Setting Key: [%s] with value [%s]\n",
-               get_c_string(cmd->val.data.key),
-               get_c_string(cmd->val.data.val));
+               get_c_string(get_key(cmd->val.data, &e)),
+               get_c_string(get_val(cmd->val.data, &e))
+        );
         break;
     case KV_CMD_GET:
-        printf("Key: %s\nVal: Unknown\n", get_c_string(cmd->val.data.key));
+        printf("Key: %s\nVal: Unknown\n", get_c_string(get_key(cmd->val.data, &e)));
         break;
     case KV_CMD_DEL:
         printf("Deleting key-value pair with key: %s\n",
-               get_c_string(cmd->val.data.key));
+               get_c_string(get_key(cmd->val.data, &e)));
         break;
     case KV_CMD_SHOW:
         printf("Printing all key-value pairs.....\n");
@@ -64,7 +93,7 @@ kv_error_t exec_cmd(kv_cmd_t *cmd, bool *is_exit, data_node* kv_head) {
         cmd_help();
         break;
     case KV_CMD_EXIT:
-        /* TODO: Handling all the memory, file wrintg etc */
+      /* TODO: Handling all the memory, file wrintg etc */
         printf(C_FG_BRIGHT_BLUE BOLD RAPID_BLINK "Exiting.........\n" RESET);
         *is_exit = true;
         break;
