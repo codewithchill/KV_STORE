@@ -31,20 +31,23 @@ void free_kv_pair(kv_pair **p) {
     *p = NULL;
   }
 }
-string *get_key(const kv_pair *restrict p, kv_error_t *e) {
+const string *get_key(const kv_pair *restrict p, kv_error_t *e) {
   if (IS_NULL(p) || IS_NULL(e))
     return NULL;
   return p->key;
 }
-string *get_val(const kv_pair *restrict p, kv_error_t *e) {
+const string *get_val(const kv_pair *restrict p, kv_error_t *e) {
   if (IS_NULL(p) || IS_NULL(e))
     return NULL;
   return p->val;
 }
-void set_kv_pair_key_val(kv_pair *p, string *restrict key,
-                         string *restrict val) {
+kv_error_t set_kv_pair_key_val(kv_pair *p, string *restrict key,
+                               string *restrict val) {
   if (IS_NULL(p))
-    return;
-  p->key = key;
-  p->val = val;
+    return KV_ERR_INVAL_ARG;
+  if (IS_NULL(p->key))
+    p->key = key;
+  if (IS_NULL(p->val))
+    p->val = val;
+  return KV_ERR_NONE;
 }

@@ -296,21 +296,20 @@ tokens_t kv_get_tokens(string *line) {
   return tkns;
 }
 kv_cmd_t *kv_parse_tokens(const tokens_t *tks) {
-  kv_cmd_t *cmd = init_cmd();
-  bool is_set = false;
+  kv_cmd_t *c = init_cmd();
+  if (IS_NULL(c)) return NULL;
   if (IS_NULL(tks) || KV_IS_ERROR(tks->err) ||
       IS_EQUAL(tks->token_capacity, 0) || IS_EQUAL(tks->token_count, 0) ||
       IS_NULL(tks->tokens)) {
-    is_set = true;
-    set_cmd_err_value(cmd, KV_ERR_INVAL_ARG);
-    return cmd;
+    set_cmd_err_value(c, KV_ERR_INVAL_ARG);
+    return c;
   }
+  bool is_set = false;
   if (IS_NOT_EQUAL(tks->tokens[0]->tok_t, KV_TOK_CMD)) {
     is_set = true;
-    set_cmd_err_value(cmd, KV_ERR_TOK_ORDER);
+    set_cmd_err_value(c, KV_ERR_TOK_ORDER);
   } else {
     token_t *tok = tks->tokens[0];
-    kv_cmd_t *c = init_cmd();
     for (size_t i = 0; i < n_cmds; i++) {
       if (IS_EQUAL(strlen(cmds[i].cmd_str), str_len(tok->v.token)) &&
           !strcmp(get_c_string(tok->v.token), cmds[i].cmd_str)) {
@@ -319,14 +318,10 @@ kv_cmd_t *kv_parse_tokens(const tokens_t *tks) {
           set_cmd_err_value(c, KV_ERR_CMD_ARGS);
         else {
           set_cmd_type(c, cmds[i].cmd);
-
-          if (IS_NULL(c.val.data)) {
-            set_cmd_err_value(c, KV_ERR_MEM_ALLOC);
-            return c;
-          }
+          init_cmd_args(c);
           switch (cmds[i].noOfArgs) {
           case 0:
-            set_kv_pair_key_val(c.val.data, NULL, NULL);
+            set_cmd_args(c, NULL, NULL);
             break;
           case 1: {
             string *k = NULL;
@@ -334,7 +329,7 @@ kv_cmd_t *kv_parse_tokens(const tokens_t *tks) {
               char *raw = get_c_string(tks->tokens[1]->v.token);
               create_string(&k, (bytes)raw, strlen(raw));
             }
-            set_kv_pair_key_val(c.val.data, k, NULL);
+            set_cmd_args(c, k, NULL);
             break;
           }
           case 2: {
@@ -348,19 +343,16 @@ kv_cmd_t *kv_parse_tokens(const tokens_t *tks) {
               char *raw_v = get_c_string(tks->tokens[2]->v.token);
               create_string(&v, (bytes)raw_v, strlen(raw_v));
             }
-            set_kv_pair_key_val(c.val.data, k, v);
+            set_cmd_args(c, k, v);
             break;
           }
           }
         }
-        cmd = c;
         break;
       }
     }
   }
-  if (!is_set) {
-    cmd.cmd = KV_CMD_ERR;
-    cmd.val.err = KV_ERR_INVAL_CMD;
-  }
-  return cmd;
+  if (!is_set)
+    set_cmd_err_value(c, KV_ERR_INVAL_CMD);
+  return c;
 }

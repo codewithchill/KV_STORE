@@ -1,4 +1,6 @@
 // #include <kv/ansi.h>
+#include "kv/data.h"
+#include "kv/string.h"
 #include <kv/cmds.h>
 #include <kv/error.h>
 #include <kv/macros.h>
@@ -36,8 +38,16 @@ kv_cmd_t *init_cmd() {
   kv_cmd_t *c = malloc(sizeof(*c));
   if (IS_NULL(c))
     return NULL;
-  set_cmd_err_value(c, KV_ERR_MEM_ALLOC);
+  set_cmd_err_value(c, KV_ERR_NOT_INIT);
   return c;
+}
+kv_error_t init_cmd_args(kv_cmd_t *c) {
+  if (IS_NULL(c))
+    return KV_ERR_INVAL_ARG;
+  c->val.data = init_key_val();
+  if (IS_NULL(c->val.data))
+    return KV_ERR_MEM_ALLOC;
+  return KV_ERR_NONE;
 }
 void set_cmd_type(kv_cmd_t *restrict c, const cmd_t cmd) {
   if (IS_NOT_NULL(c))
@@ -52,7 +62,13 @@ void set_cmd_err_value(kv_cmd_t *restrict c, const kv_error_t e) {
 bool is_cmd_ok(const kv_cmd_t *restrict c) {
   if (IS_NULL(c))
     return KV_ERR_INVAL_ARG;
-  return !IS_EQUAL(c->cmd, KV_CMD_ERR);
+  return IS_NOT_EQUAL(c->cmd, KV_CMD_ERR);
+}
+kv_error_t set_cmd_args(kv_cmd_t *c, string *restrict arg_1,
+                        string *restrict args_2) {
+  if (IS_NULL(c))
+    return KV_ERR_INVAL_ARG;
+  return set_kv_pair_key_val(c->val.data, arg_1, args_2);
 }
 kv_error_t get_cmd_err(const kv_cmd_t *restrict c) {
   if (IS_NULL(c))
@@ -64,7 +80,9 @@ kv_error_t get_cmd_err(const kv_cmd_t *restrict c) {
 void free_cmd(kv_cmd_t **c) {
   if (IS_NOT_NULL(c)) {
     if (IS_NOT_NULL(*c))
-      free_kv_pair(&((*c)->val.data));
+      if (IS_NOT_EQUAL((*c)->cmd, KV_CMD_ERR))
+        free_kv_pair(&((*c)->val.data));
+    free(*c);
     *c = NULL;
   }
 }
@@ -72,9 +90,10 @@ kv_error_t exec_cmd(kv_cmd_t *cmd, bool *is_exit, data_node *kv_head) {
   kv_error_t e = KV_ERR_NOT_INIT;
   if (IS_NULL(cmd) || IS_NULL(is_exit))
     e = KV_ERR_INVAL_ARG;
-  if (IS_EQUAL(cmd->cmd, KV_CMD_ERR))
+  else if (IS_EQUAL(cmd->cmd, KV_CMD_ERR))
     e = KV_ERR_INVAL_CMD;
-  e = KV_ERR_NONE;
+  else
+    e = KV_ERR_NONE;
   switch (cmd->cmd) {
   case KV_CMD_SET:
     cmd_set(kv_head);
