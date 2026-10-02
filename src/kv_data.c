@@ -51,3 +51,22 @@ kv_error_t set_kv_pair_key_val(kv_pair *p, string *restrict key,
     p->val = val;
   return KV_ERR_NONE;
 }
+
+data_node *init_data_node() {
+  data_node *node = malloc(sizeof(*node));
+  if (IS_NULL(node)) return NULL;
+  node->err = KV_ERR_NOT_INIT;
+  node->data = NULL;
+  node->prev = NULL;
+  node->next = NULL;
+  return node;
+}
+void free_data_node_head(data_node **head) {
+  if (IS_NOT_NULL(head)) {
+    if (IS_NOT_NULL(*head)) {
+      free_kv_pair(&((*head)->data));
+      free(*head);
+      *head = NULL;
+    }
+  }
+}

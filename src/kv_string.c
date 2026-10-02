@@ -14,6 +14,7 @@
 #define _1_KB 1024
 #define _DEFAULT_LINE_SIZE (_1_KB / 4)
 
+typedef struct _str _str;
 struct _str {
   bytes data;
   size_t byte_len;
@@ -213,4 +214,12 @@ char *get_c_string(const string *s) {
   if (s)
     return (char *)(s->s->data);
   return NULL;
+}
+size_t get_char_idx(const string *restrict s, const Rune c) {
+  if (IS_NULL(s) || !is_str_ok(s))
+    return -1;
+  for (size_t i = 0; i < s->s->byte_len; i++)
+    if (IS_EQUAL((s->s->data)[i], c))
+      return i;
+  return -1;
 }

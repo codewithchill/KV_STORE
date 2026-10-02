@@ -51,6 +51,7 @@ static kv_error_t repl(data_node *kv_head) {
       status = exec_cmd(cmd, &is_exit, kv_head);
       if (KV_IS_ERROR(status))
         kv_print_err(status);
+
       free_cmd(&cmd);
       free_tokens(&t);
       free_str(&line);
@@ -64,11 +65,12 @@ static int kv_start(kv_args Args) {
   if (IS_NOT_EQUAL(Args.flg, KV_ARGS_FILE_PATH) || !Args.val.filepath)
     return EXIT_FAILURE;
   int status = EXIT_SUCCESS;
-  // data_node *kv_head = load_from_file_if_exists(Args.val.filepath);
-  data_node *kv_head = NULL;
-
-  status = repl(kv_head); /* TODO: To parse kv_error_t */
-
+  data_node *kv_head = load_from_file_if_exists(Args.val.filepath);
+  status = repl(kv_head);
+  if (KV_IS_ERROR(status))
+    kv_print_err(status);
+  save_to_file(kv_head);
+  free_data_node(&kv_head);
   return status;
 }
 static void kv_print_help(const char *restrict PROG_NAME,

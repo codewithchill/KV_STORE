@@ -12,3 +12,6 @@ kv_error_t set_kv_pair_key_val(kv_pair *p, string *restrict key,
 const string *get_key(const kv_pair *restrict p, kv_error_t *e);
 const string *get_val(const kv_pair *restrict p, kv_error_t *e);
 void free_kv_pair(kv_pair **p);
+
+data_node* init_data_node();
+void free_data_node(data_node **head);
