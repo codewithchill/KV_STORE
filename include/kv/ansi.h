@@ -107,4 +107,4 @@
 #define C_BG_BRIGHT_CYAN   "\033[106m"
 #define C_BG_BRIGHT_WHITE  "\033[107m"
 
-// clang-format off
+// clang-format on

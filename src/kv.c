@@ -85,10 +85,10 @@ static void kv_print_help(const char *restrict PROG_NAME,
          PROG_NAME, VERSION, msg, str);
 }
 /*static void kv_print_all_args(const int argc, const char **restrict argv) {
-    printf("Argument Count: [%d]\n", argc);
-    for (int i = 0; argc >= i && IS_NOT_EQUAL(argv[i], NULL); i++)
-        printf("[%02d]: [%s]\n", i, argv[i]);
-    printf("\n");
+printf("Argument Count: [%d]\n", argc);
+for (int i = 0; argc >= i && IS_NOT_EQUAL(argv[i], NULL); i++)
+printf("[%02d]: [%s]\n", i, argv[i]);
+printf("\n");
 }*/
 static kv_args kv_parse_args(const int argc, const char **restrict argv) {
   // kv_print_all_args(argc, argv);

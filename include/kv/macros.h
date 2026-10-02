@@ -15,5 +15,5 @@
 
 #undef PRINT_DEBUG_LINE
 #define PRINT_DEBUG_LINE(s)                                                    \
-    printf(C_FG_BRIGHT_BLUE RAPID_BLINK "[%s:%s():%d]:%s\n" RESET, __FILE__,   \
-           __func__, __LINE__, s);
+  printf(C_FG_BRIGHT_BLUE RAPID_BLINK "[%s:%s():%d]:%s\n" RESET, __FILE__,     \
+         __func__, __LINE__, s);

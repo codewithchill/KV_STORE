@@ -23,40 +23,40 @@ data_node *parse_file_line(data_node *node, string line) {
 */
 
 data_node *load_from_file_if_exists(const char *restrict /*file_path*/) {
-    /*    if (!file_path)
-            return NULL;
+  /*    if (!file_path)
+          return NULL;
 
-        FILE *f = fopen(file_path, "r");
-        if (!f)
-            return NULL;
-        *
-         * LOOP:
-         *      get_line
-         *      break if line NULL
-         *      parse_line
-         *      store_node
-         *
-         *
+      FILE *f = fopen(file_path, "r");
+      if (!f)
+          return NULL;
+      *
+       * LOOP:
+       *      get_line
+       *      break if line NULL
+       *      parse_line
+       *      store_node
+       *
+       *
 
-        data_node *head = NULL;
-        // data_node *tail = NULL;
+      data_node *head = NULL;
+      // data_node *tail = NULL;
 
-        string line;
-        get_line(&line, f);
-        while (IS_NOT_EQUAL(line.s->data, NULL)) {
-            if (IS_NOT_EQUAL(0, line.s->capacity)) {
-                free_str(&line);
-                break;
-            }
+      string line;
+      get_line(&line, f);
+      while (IS_NOT_EQUAL(line.s->data, NULL)) {
+          if (IS_NOT_EQUAL(0, line.s->capacity)) {
+              free_str(&line);
+              break;
+          }
 
-            // data_node *node = parse_file_line(line);
-            // tail = store_node(node, tail);
+          // data_node *node = parse_file_line(line);
+          // tail = store_node(node, tail);
 
-            free_str(&line);
-            get_line(&line, f);
-        }
-        fclose(f);
-        return head;
-    */
-    return NULL;
+          free_str(&line);
+          get_line(&line, f);
+      }
+      fclose(f);
+      return head;
+  */
+  return NULL;
 }

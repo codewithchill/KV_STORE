@@ -19,8 +19,5 @@ typedef enum {
 #define KV_IS_OK(e) IS_EQUAL(KV_ERR_NONE, (e))
 #define KV_IS_ERROR(e) IS_NOT_EQUAL(KV_ERR_NONE, (e))
 
-// #define IF_KV_IS_OK(e) if (KV_IS_OK((e)))
-// #define IF_KV_IS_ERROR(e) if (KV_IS_OK((e)))
-
 char *get_error_msg(kv_error_t e);
 void kv_print_err(kv_error_t e);
