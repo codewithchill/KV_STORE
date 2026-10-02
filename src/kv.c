@@ -30,16 +30,16 @@ static kv_error_t repl(data_node *kv_head) {
     string *line = str_init();
     get_line(line, stdin);
     if (is_str_ok(line)) {
-      tokens_t t = kv_get_tokens(line);
-      if (KV_IS_ERROR(t.err)) {
-        kv_print_err(t.err);
-        status = t.err;
+      tokens_t *t = kv_get_tokens(line);
+      if (!is_token_ok(t)) {
+        status = get_tok_err(t);
+        kv_print_err(status);
         free_tokens(&t);
         free_str(&line);
         continue;
       }
 
-      kv_cmd_t *cmd = kv_parse_tokens(&t);
+      kv_cmd_t *cmd = kv_parse_tokens(t);
       if (!is_cmd_ok(cmd)) {
         status = get_cmd_err(cmd);
         kv_print_err(status);
