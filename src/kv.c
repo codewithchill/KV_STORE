@@ -1,3 +1,4 @@
+#include <kv/data.h>
 #include <kv/ansi.h>
 #include <kv/cmds.h>
 #include <kv/error.h>
@@ -34,8 +35,8 @@ static kv_error_t repl(data_node *kv_head) {
       if (!is_token_ok(t)) {
         status = get_tok_err(t);
         kv_print_err(status);
-        free_tokens(&t);
-        free_str(&line);
+        free_tokens(t);
+        free_str(line);
         continue;
       }
 
@@ -43,18 +44,18 @@ static kv_error_t repl(data_node *kv_head) {
       if (!is_cmd_ok(cmd)) {
         status = get_cmd_err(cmd);
         kv_print_err(status);
-        free_cmd(&cmd);
-        free_tokens(&t);
-        free_str(&line);
+        free_cmd(cmd);
+        free_tokens(t);
+        free_str(line);
         continue;
       }
       status = exec_cmd(cmd, &is_exit, kv_head);
       if (KV_IS_ERROR(status))
         kv_print_err(status);
 
-      free_cmd(&cmd);
-      free_tokens(&t);
-      free_str(&line);
+      free_cmd(cmd);
+      free_tokens(t);
+      free_str(line);
       if (is_exit)
         break;
     }
@@ -63,14 +64,19 @@ static kv_error_t repl(data_node *kv_head) {
 }
 static int kv_start(kv_args Args) {
   if (IS_NOT_EQUAL(Args.flg, KV_ARGS_FILE_PATH) || !Args.val.filepath)
-    return EXIT_FAILURE;
-  int status = EXIT_SUCCESS;
-  data_node *kv_head = load_from_file_if_exists(Args.val.filepath);
+    return KV_ERR_INVAL_ARG;
+  int status = KV_ERR_NONE;
+
+  // data_node *kv_head = load_from_file_if_exists(Args.val.filepath);
+  data_node *kv_head = init_data_node();
+  if (IS_NULL(kv_head))
+    return KV_ERR_MEM_ALLOC;
+  
   status = repl(kv_head);
   if (KV_IS_ERROR(status))
     kv_print_err(status);
-  save_to_file(kv_head);
-  free_data_node(&kv_head);
+  // save_to_file(kv_head);
+  free_data_node(kv_head);
   return status;
 }
 static void kv_print_help(const char *restrict PROG_NAME,

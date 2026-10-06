@@ -168,14 +168,11 @@ void get_line(string *restrict s, FILE *f) {
   s->s->byte_len = byte_count;
   s->s->utf_len = utf_str_len(s->s->data);
 }
-void free_str(string **s) {
+void free_str(string *s) {
   if (IS_NOT_NULL(s)) {
-    if (IS_NOT_NULL(*s)) {
-      if (IS_NOT_NULL((*s)->s))
-        free__str(&((*s)->s));
-      free(*s);
-      *s = NULL;
-    }
+    if (IS_NOT_NULL(s->s))
+      free__str(&(s->s));
+    free(s);
   }
 }
 size_t str_len(const string *s) { return s->s->utf_len; }

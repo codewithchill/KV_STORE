@@ -120,7 +120,7 @@ static token_t get_next_token(bytes *data) {
         kv_error_t e = create_string(&s, start, c_count);
         if (KV_IS_ERROR(e)) {
           kv_print_err(e);
-          free_str(&s);
+          free_str(s);
           if (IS_EQUAL(t.v.err, KV_ERR_INVAL_ARG))
             t.v.err = KV_ERR_INPUT;
           else
@@ -130,7 +130,7 @@ static token_t get_next_token(bytes *data) {
         }
         t.tok_t = get_tok_type(s);
         if (IS_EQUAL(t.tok_t, KV_TOK_ERR)) {
-          free_str(&s);
+          free_str(s);
           t.v.err = KV_ERR_INVAL_TOK;
         }
         t.v.token = s;
@@ -155,7 +155,7 @@ static token_t get_next_token(bytes *data) {
         string *s = str_init();
         auto e = create_string(&s, start, c_count);
         if (KV_IS_ERROR(e)) {
-          free_str(&s);
+          free_str(s);
           t.tok_t = KV_TOK_ERR;
           if (IS_EQUAL(t.v.err, KV_ERR_INVAL_ARG))
             t.v.err = KV_ERR_INPUT;
@@ -165,7 +165,7 @@ static token_t get_next_token(bytes *data) {
         }
         t.tok_t = get_tok_type(s);
         if (IS_EQUAL(t.tok_t, KV_TOK_ERR)) {
-          free_str(&s);
+          free_str(s);
           t.v.err = KV_ERR_INVAL_TOK;
         }
         t.v.token = s;
@@ -190,7 +190,7 @@ static token_t get_next_token(bytes *data) {
         string *s = str_init();
         auto e = create_string(&s, start, c_count);
         if (KV_IS_ERROR(e)) {
-          free_str(&s);
+          free_str(s);
           t.tok_t = KV_TOK_ERR;
           if (IS_EQUAL(t.v.err, KV_ERR_INVAL_ARG))
             t.v.err = KV_ERR_INPUT;
@@ -200,7 +200,7 @@ static token_t get_next_token(bytes *data) {
         }
         t.tok_t = get_tok_type(s);
         if (IS_EQUAL(t.tok_t, KV_TOK_ERR)) {
-          free_str(&s);
+          free_str(s);
           t.v.err = KV_ERR_INVAL_TOK;
         }
         t.v.token = s;
@@ -253,10 +253,10 @@ bool is_token_ok(const tokens_t *t) {
   return false;
 }
 kv_error_t get_tok_err(const tokens_t *t) { return t->err; }
-void free_tokens(tokens_t **t) {
-  if (IS_NOT_NULL(t) && IS_NOT_NULL(*t)) {
-    for (size_t i = 0; i < (*t)->token_count; i++) {
-      token_t *tok = (*t)->tokens[i];
+void free_tokens(tokens_t *t) {
+  if (IS_NOT_NULL(t)) {
+    for (size_t i = 0; i < t->token_count; i++) {
+      token_t *tok = t->tokens[i];
       if (IS_NOT_NULL(tok)) {
         /*
          * NOTE:
@@ -268,18 +268,13 @@ void free_tokens(tokens_t **t) {
          * so there is no string to free.
          */
         if (tok->tok_t == KV_TOK_CMD || tok->tok_t == KV_TOK_STR)
-          free_str(&tok->v.token);
+          free_str(tok->v.token);
         free(tok);
-        (*t)->tokens[i] = NULL;
+        t->tokens[i] = NULL;
       }
     }
-    free((*t)->tokens);
-    (*t)->tokens = NULL;
-    (*t)->err = KV_ERR_NONE;
-    (*t)->token_count = 0;
-    (*t)->token_capacity = 0;
-    free(*t);
-    *t = NULL;
+    free(t->tokens);
+    free(t);
   }
 }
 tokens_t *kv_get_tokens(string *line) {
@@ -309,14 +304,14 @@ tokens_t *kv_get_tokens(string *line) {
       break;
     }
     if (IS_EQUAL(tkns->token_count, DEFAULT_TOK_LIMIT)) {
-      free_str(&t.v.token);
+      free_str(t.v.token);
       tkns->err = KV_ERR_INPUT;
       break;
     }
     tkns->tokens[tkns->token_count] =
         malloc(sizeof(*tkns->tokens[tkns->token_count]));
     if (!tkns->tokens[tkns->token_count]) {
-      free_str(&t.v.token);
+      free_str(t.v.token);
       tkns->err = KV_ERR_MEM_ALLOC;
       break;
     }

@@ -1,9 +1,9 @@
-// #include <kv/ansi.h>
-#include "kv/data.h"
-#include "kv/string.h"
 #include <kv/cmds.h>
+#include <kv/data.h>
 #include <kv/error.h>
 #include <kv/macros.h>
+#include <kv/string.h>
+
 #include <stdlib.h>
 
 struct kv_cmd_t {
@@ -14,8 +14,8 @@ struct kv_cmd_t {
   } val;
 };
 
-void cmd_set(data_node * /*kv_head*/) { return; }
-void cmd_help() {
+static void cmd_set(data_node *kv_head, kv_pair *p) { return; }
+static void cmd_help() {
   // clang-format off
     printf(
         C_FG_BRIGHT_YELLOW
@@ -77,13 +77,11 @@ kv_error_t get_cmd_err(const kv_cmd_t *restrict c) {
     return c->val.err;
   return KV_ERR_NONE;
 }
-void free_cmd(kv_cmd_t **c) {
+void free_cmd(kv_cmd_t *c) {
   if (IS_NOT_NULL(c)) {
-    if (IS_NOT_NULL(*c))
-      if (IS_NOT_EQUAL((*c)->cmd, KV_CMD_ERR))
-        free_kv_pair(&((*c)->val.data));
-    free(*c);
-    *c = NULL;
+    if (IS_NOT_EQUAL(c->cmd, KV_CMD_ERR))
+      free_kv_pair(c->val.data);
+    free(c);
   }
 }
 kv_error_t exec_cmd(kv_cmd_t *cmd, bool *is_exit, data_node *kv_head) {
@@ -96,10 +94,10 @@ kv_error_t exec_cmd(kv_cmd_t *cmd, bool *is_exit, data_node *kv_head) {
     e = KV_ERR_NONE;
   switch (cmd->cmd) {
   case KV_CMD_SET:
-    cmd_set(kv_head);
     printf("Setting Key: [%s] with value [%s]\n",
            get_c_string(get_key(cmd->val.data, &e)),
            get_c_string(get_val(cmd->val.data, &e)));
+    cmd_set(kv_head, cmd->val.data);
     break;
   case KV_CMD_GET:
     printf("Key: %s\nVal: Unknown\n", get_c_string(get_key(cmd->val.data, &e)));

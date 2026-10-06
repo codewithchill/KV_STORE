@@ -12,7 +12,7 @@ typedef byte *bytes;
 typedef struct string string;
 
 void get_line(string *restrict s, FILE *f);
-void free_str(string **s);
+void free_str(string *s);
 void print_line_detail(string *line, const char mode);
 bool is_str_ok(const string *s);
 char *get_c_string(const string *s);

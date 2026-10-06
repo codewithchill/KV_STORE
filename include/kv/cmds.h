@@ -15,9 +15,6 @@ typedef enum cmd_t {
 } cmd_t;
 typedef struct kv_cmd_t kv_cmd_t;
 
-void cmd_help();
-void cmd_set(data_node *kv_head);
-
 kv_cmd_t *init_cmd();
 kv_error_t init_cmd_args(kv_cmd_t *c);
 
@@ -28,6 +25,6 @@ kv_error_t set_cmd_args(kv_cmd_t *c, string *restrict arg_1,
 bool is_cmd_ok(const kv_cmd_t *restrict c);
 kv_error_t get_cmd_err(const kv_cmd_t *restrict c);
 
-void free_cmd(kv_cmd_t **c);
+void free_cmd(kv_cmd_t *c);
 
 kv_error_t exec_cmd(kv_cmd_t *cmd, bool *is_exit, data_node *kv_head);

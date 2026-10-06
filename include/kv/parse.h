@@ -16,7 +16,7 @@ typedef struct tokens_t tokens_t;
 
 kv_error_t get_tok_err(const tokens_t *t);
 bool is_token_ok(const tokens_t* t);
-void free_tokens(tokens_t **t);
+void free_tokens(tokens_t *t);
 void print_all_tokens(tokens_t *tok);
 tokens_t *kv_get_tokens(string *line);
 kv_cmd_t *kv_parse_tokens(const tokens_t *tks);
