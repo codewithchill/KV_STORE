@@ -1,5 +1,6 @@
 
 #include <assert.h>
+#include <kv/int.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -193,6 +194,7 @@ kv_error_t create_string(string **restrict str, const bytes restrict s,
   if (IS_NULL((*str)->s) || IS_NULL((*str)->s->data))
     return KV_ERR_MEM_ALLOC;
   memcpy((*str)->s->data, s, s_len);
+  (*str)->err = KV_ERR_NONE;
   (*str)->s->data[s_len] = '\0';
   (*str)->s->byte_len = s_len;
   (*str)->s->capacity = s_len + 1;
@@ -212,7 +214,7 @@ char *get_c_string(const string *s) {
     return (char *)(s->s->data);
   return NULL;
 }
-size_t get_char_idx(const string *restrict s, const Rune c) {
+i64 get_char_idx(const string *restrict s, const Rune c) {
   if (IS_NULL(s) || !is_str_ok(s))
     return -1;
   for (size_t i = 0; i < s->s->byte_len; i++)

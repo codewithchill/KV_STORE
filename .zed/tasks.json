@@ -15,7 +15,7 @@
         "shell": {
             "program": "bash"
         },
-        "command": "clear && make clean && make OPT=-O2 -j3 CC=gcc && ./out/main"
+        "command": "make clean && clear && make SANITIZE_ADDR= OPT=-O0 -j4 CC=gcc && valgrind --leak-check=full -s ./out/main"
     },
     {
         "label": "Clean",

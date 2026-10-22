@@ -4,6 +4,7 @@
 #include <kv/macros.h>
 #include <kv/string.h>
 
+#include <stdio.h>
 #include <stdlib.h>
 
 struct kv_cmd_t {
@@ -15,6 +16,13 @@ struct kv_cmd_t {
 };
 
 static void cmd_set(data_node *kv_head, kv_pair *p) { return; }
+static void cmd_show(data_node *head) {
+  if (IS_NULL(head))
+    return;
+  cmd_show(get_next_node(head));
+  printf("Printing all key-value pairs.....\n");
+  print_node_data(head);
+}
 static void cmd_help() {
   // clang-format off
     printf(
@@ -23,12 +31,12 @@ static void cmd_help() {
             "\nNOTE: For some commands either <key> or <value> or both may be "
             "optional.\n"
             "Available commands:\n\n"
-            BOLD "    SET" NORMAL ": Set the <val> for the <value>\n"
-            BOLD "    GET" NORMAL ": Get the value of the <key>\n"
-            BOLD "    DEL" NORMAL ": Delete the key-value pair associated with <key>\n"
-            BOLD "   SHOW" NORMAL ": Show all the keys and there corresponding value\n"
-            BOLD "   HELP" NORMAL ": Prints this help menu.\n"
-            BOLD "   EXIT" NORMAL ": Exits the Program.\n"
+            BOLD " SET <key> <val> " NORMAL ": Set the <val> for the <value>\n"
+            BOLD " GET <key>       " NORMAL ": Get the value of the <key>\n"
+            BOLD " DEL <key>       " NORMAL ": Delete the key-value pair associated with <key>\n"
+            BOLD "SHOW             " NORMAL ": Show all the keys and there corresponding value\n"
+            BOLD "HELP             " NORMAL ": Prints this help menu.\n"
+            BOLD "EXIT             " NORMAL ": Exits the Program.\n"
         RESET
     );
   // clang-format on
@@ -107,7 +115,7 @@ kv_error_t exec_cmd(kv_cmd_t *cmd, bool *is_exit, data_node *kv_head) {
            get_c_string(get_key(cmd->val.data, &e)));
     break;
   case KV_CMD_SHOW:
-    printf("Printing all key-value pairs.....\n");
+    cmd_show(kv_head);
     break;
   case KV_CMD_HELP:
     cmd_help();

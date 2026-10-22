@@ -3,5 +3,5 @@ CompileFlags:
     - "-xc"
     - "-std=c23"
 
-Documentation:
-      CommentFormat: Doxygen
+# Documentation:
+#       CommentFormat: Doxygen

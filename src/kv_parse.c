@@ -1,31 +1,34 @@
-#include "kv/macros.h"
 #include <kv/cmds.h>
 #include <kv/data.h>
 #include <kv/error.h>
+#include <kv/int.h>
 #include <kv/kv.h>
+#include <kv/macros.h>
 #include <kv/parse.h>
 #include <kv/string.h>
 
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 
-static constexpr int32_t DEFAULT_TOK_LIMIT = 3;
+static constexpr i32 DEFAULT_TOK_LIMIT = 3;
 static constexpr char __cmds[][5] = {"SET",  "GET",  "DEL",
                                      "SHOW", "HELP", "EXIT"};
 static constexpr size_t n_cmds = sizeof(__cmds) / sizeof(__cmds[0]);
-// clang-format off
 static const struct {
-cmd_t cmd;
-const char *cmd_str;
-uint8_t noOfArgs;
+  cmd_t cmd;
+  const char *cmd_str;
+  u8 noOfArgs;
 } cmds[] = {
-{.cmd = KV_CMD_SET, .cmd_str = __cmds[KV_CMD_SET], .noOfArgs = 2}, /* <key>, <val> */
-{.cmd = KV_CMD_GET, .cmd_str = __cmds[KV_CMD_GET], .noOfArgs = 1}, /* <key> */
-{.cmd = KV_CMD_DEL, .cmd_str = __cmds[KV_CMD_DEL], .noOfArgs = 1}, /* <key> */
-{.cmd = KV_CMD_SHOW, .cmd_str = __cmds[KV_CMD_SHOW], .noOfArgs = 0},  /*  */
-{.cmd = KV_CMD_HELP, .cmd_str = __cmds[KV_CMD_HELP], .noOfArgs = 0},  /*  */
-{.cmd = KV_CMD_EXIT, .cmd_str = __cmds[KV_CMD_EXIT], .noOfArgs = 0}}; /*  */
-// clang-format on
+    // clang-format off
+  {.cmd = KV_CMD_SET, .cmd_str = __cmds[KV_CMD_SET], .noOfArgs = 2}, /* <key>, <val> */
+  {.cmd = KV_CMD_GET, .cmd_str = __cmds[KV_CMD_GET], .noOfArgs = 1}, /* <key> */
+  {.cmd = KV_CMD_DEL, .cmd_str = __cmds[KV_CMD_DEL], .noOfArgs = 1}, /* <key> */
+  {.cmd = KV_CMD_SHOW, .cmd_str = __cmds[KV_CMD_SHOW], .noOfArgs = 0},  /*  */
+  {.cmd = KV_CMD_HELP, .cmd_str = __cmds[KV_CMD_HELP], .noOfArgs = 0},  /*  */
+  {.cmd = KV_CMD_EXIT, .cmd_str = __cmds[KV_CMD_EXIT], .noOfArgs = 0}   /*  */
+    // clang-format on
+};
 
 struct token_t {
   token_type tok_t;

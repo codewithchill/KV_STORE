@@ -1,3 +1,4 @@
 #pragma once
+#include <kv/int.h>
 
-int kv(const int argc, const char **restrict argv);
+i32 kv(const int argc, const char **restrict argv);

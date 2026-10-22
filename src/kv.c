@@ -1,6 +1,6 @@
-#include <kv/data.h>
 #include <kv/ansi.h>
 #include <kv/cmds.h>
+#include <kv/data.h>
 #include <kv/error.h>
 #include <kv/file.h>
 #include <kv/kv.h>
@@ -67,11 +67,12 @@ static int kv_start(kv_args Args) {
     return KV_ERR_INVAL_ARG;
   int status = KV_ERR_NONE;
 
-  // data_node *kv_head = load_from_file_if_exists(Args.val.filepath);
+  data_node *kv_head = load_from_file_if_exists(Args.val.filepath);
+  /*
   data_node *kv_head = init_data_node();
   if (IS_NULL(kv_head))
     return KV_ERR_MEM_ALLOC;
-  
+  */
   status = repl(kv_head);
   if (KV_IS_ERROR(status))
     kv_print_err(status);
@@ -123,8 +124,8 @@ static kv_args kv_parse_args(const int argc, const char **restrict argv) {
 }
 
 /* INFO: Public Functions */
-int kv(const int argc, const char **restrict argv) {
-  int ret_code = 0;
+i32 kv(const int argc, const char **restrict argv) {
+  i32 ret_code = 0;
   kv_args Args = kv_parse_args(argc, argv);
 
   switch (Args.flg) {

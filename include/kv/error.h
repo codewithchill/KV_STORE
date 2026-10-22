@@ -12,8 +12,8 @@ typedef enum {
   KV_ERR_TOK_ORDER, /* Error in order of tokens */
   KV_ERR_INPUT,     /* Error in user input */
   KV_ERR_CMD_ARGS,  /* Invalid commands arguments */
-                    // KV_ERR_
-                    // KV_ERR_STR_
+  // KV_ERR_
+  // KV_ERR_STR_
 } kv_error_t;
 
 #define KV_IS_OK(e) IS_EQUAL(KV_ERR_NONE, (e))

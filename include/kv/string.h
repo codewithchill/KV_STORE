@@ -1,13 +1,12 @@
 #pragma once
 
-#include <stddef.h>
-#include <stdint.h>
+#include <kv/int.h>
 #include <stdio.h>
 
 #include <kv/error.h>
 
-typedef int32_t Rune;
-typedef uint8_t byte;
+typedef i32 Rune;
+typedef u8 byte;
 typedef byte *bytes;
 typedef struct string string;
 
@@ -20,4 +19,4 @@ string *str_init();
 size_t str_len(const string *s);
 kv_error_t create_string(string **restrict str, const bytes restrict s,
                          const size_t s_len);
-size_t get_char_idx(const string * restrict s, const Rune c);
+i64 get_char_idx(const string * restrict s, const Rune c);
